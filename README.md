@@ -4,9 +4,14 @@
 
 ### ▶ [**Try it live — ethical-tech-colab.github.io/turnstone**](https://ethical-tech-colab.github.io/turnstone/)
 
-*Runs in any browser. Tap **Run demo** to watch a capture session score itself, or **Camera**
-to point it at a real object. Every number is computed from actual pixels — nothing is
-simulated.*
+*Runs in any browser, works offline, installs to a home screen.*
+
+| | |
+|---|---|
+| [**Capture**](https://ethical-tech-colab.github.io/turnstone/capture.html) | Record an object. Coverage dial, one instruction at a time, and a session that survives a reload. |
+| [**Quality demo**](https://ethical-tech-colab.github.io/turnstone/) | Watch a session score itself, and see what each dimension actually measures. |
+
+*Every number is computed from actual pixels — nothing is simulated.*
 
 ---
 
@@ -33,14 +38,18 @@ is and what it may be relied upon for.
 | ✅ **Phase 1** · metric extractors | [`lib/metrics.js`](lib/metrics.js) — the gap DPA names in its own §10 |
 | ✅ **Phase 1** · guidance loop | [`lib/guidance.js`](lib/guidance.js) — one instruction at a time, with hysteresis |
 | ✅ **Phase 1** · live demo | [`web/`](web) — the extractors running on real pixels |
-| ⬜ Phase 2 | Full capture client: full-resolution stills, session store, offline |
+| ✅ **Phase 2** · camera control | [`lib/camera.js`](lib/camera.js) — full-res stills with a fallback chain, optics locking |
+| ✅ **Phase 2** · persistent sessions | [`lib/store.js`](lib/store.js) — IndexedDB; frames survive reload, phone call, flat battery |
+| ✅ **Phase 2** · auto-capture | [`lib/steady.js`](lib/steady.js) — one-shot on stability, so the tap never blurs the shot |
+| ✅ **Phase 2** · offline client | [`web/capture.html`](web/capture.html) — installable, boots with no network |
 | ⬜ Phase 3 | Printable target: scale bar, colour patches, fiducials, masking |
 | ⬜ Phase 4 | Reconstruction server (Docker, AliceVision) |
 
 ```bash
-node --test test/conformance.test.mjs test/metrics.test.mjs test/guidance.test.mjs   # 76 passing
-node tools/validate-rubrics.mjs        # rubric files load and score
-node tools/demo-probe.mjs              # drives the demo in headless Chrome
+node --test test/*.test.mjs           # 108 passing
+node tools/validate-rubrics.mjs       # rubric files load and score
+node tools/demo-probe.mjs             # drives the demo in headless Chrome
+node tools/capture-probe.mjs          # drives the capture client, incl. offline
 ```
 
 ---
@@ -59,7 +68,7 @@ node tools/demo-probe.mjs              # drives the demo in headless Chrome
 | Scale / colour reference | Target detection | ✅ |
 | Device metadata | Fraction of frames retaining focal length, sensor, pose | ❌ deferred |
 
-### Four things that are easy to get wrong
+### Six things that are easy to get wrong
 
 **Sharpness is content-dependent.** A carved, weathered surface outscores a smooth glazed one
 at identical focus. An absolute threshold alone marks every smooth object blurred; a relative
@@ -80,6 +89,17 @@ heritage work.
 session. Scoring it live reports a contributor as `insufficient` for a reason they can neither
 observe nor act on — a post-mortem, not guidance. It is listed as deferred, the class is
 flagged `provisional`, and it still gates the *final* record.
+
+**Autofocus invalidates the lens profile.** It silently changes the effective focal length, so
+a session shot with autofocus active has a different camera model in every frame and the
+reconstruction has no way to know. Locking optics is a metrology feature, not a convenience —
+and `lens_profile_valid` is false whenever it could not be done.
+
+**A session must survive the device.** Frames are written to IndexedDB as they are captured,
+not accumulated and saved at the end, because "save at the end" makes the failure mode losing
+everything rather than losing the last frame. The measurements are written before the image:
+if storage runs out, the record of what was measured survives, and that is the part that
+cannot be recreated from the object afterwards.
 
 ---
 

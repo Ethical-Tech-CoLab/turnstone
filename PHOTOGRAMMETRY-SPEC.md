@@ -576,34 +576,36 @@ A build is conformant when these pass. Each exists because getting it wrong is p
 
 | Phase | Contents | Status |
 |---|---|---|
-| **0 · Foundation** | Own repository; rubric as data + `heritage-v1`; scoring engine; overlap geometry; conformance tests C-1, C-2, C-3, C-8, C-9, C-11 | **done** — 18 tests passing |
-| **1 · Metrics** | §6 extractors against a fixture corpus of known-good and known-bad frames | next — closes the gap DPA names |
-| **2 · Capture client** | Coverage dial, guidance loop, auto-capture, session store, offline | |
-| **3 · Target** | Printable SVG target, marker detection, measured-length entry, masking | |
+| **0 · Foundation** | Own repository; rubric as data + `heritage-v1`; scoring engine; overlap geometry; conformance tests C-1, C-2, C-3, C-8, C-9, C-11 | **done** |
+| **1 · Metrics** | §6 extractors against a fixture corpus of known-good and known-bad frames; live demo | **done** — closes the gap DPA names |
+| **2 · Capture client** | Coverage dial, guidance loop, auto-capture, session store, offline | **done** — 108 tests, 24 browser checks |
+| **3 · Target** | Printable SVG target, marker detection, measured-length entry, masking | next |
 | **4 · Server** | Docker, AliceVision backend, job model, outputs | |
 | **5 · Binding** | `ReconstructionBinding`, perceptual mesh hash, C-6 | |
 | **6 · Interop** | CRMdig + IIIF 3D export, DPA passport wiring | |
 
-### Phase 0, as built
+### Phase 2, as built
 
 ```
-README.md
-PHOTOGRAMMETRY-CONCEPT.md   research, findings, decisions
-PHOTOGRAMMETRY-SPEC.md      this document
-rubric/heritage-v1.json     DPA's ten dimensions, transcribed mechanically
-lib/rubric.js               loader + scoring (§4, §5)
-lib/overlap.js              orbit geometry (§6.3)
-test/conformance.test.mjs   18 tests
-tools/validate-rubrics.mjs  CI guard for hand-edited rubrics
-tools/tavily_research.py    the research harness
-research/                   92 queries, raw + summarised
+lib/camera.js       full-res stills with a fallback chain; optics locking
+lib/store.js        IndexedDB sessions and frames; memory fallback
+lib/steady.js       EMA + deadband, peak-to-peak steadiness, one-shot auto-capture
+web/capture.html    the capture client
+web/sw.js           offline shell, cache named for the build
+tools/capture-probe.mjs   proves reload survival and offline boot in a real browser
 ```
 
-**On the repository.** This work began inside the Plumb repository, because that is where it
-was done, and was relocated here once the name was confirmed. The four commits that produced
-it were carried over with their history rather than squashed into an import, so the reasoning
-— including the licence findings that changed two recommendations, and the fixture error that
-the implementation caught in this specification — remains readable in `git log`.
+Three things Phase 2 settled, each because getting it wrong is plausible:
+
+- **Auto-capture is one-shot.** A continuous version fires repeatedly while the phone happens
+  to be steady, filling a session with near-identical frames from one position — which looks
+  like progress on a frame counter while adding no coverage at all.
+- **Measurements are written before images.** If storage runs out mid-session the record of
+  what was measured survives, and that is the part which cannot be recreated from the object
+  afterwards.
+- **A resumed session is rescored, not replayed.** The score is derived, so reopening a
+  session runs it through today's extractors rather than freezing it at whatever ran the week
+  it was captured.
 
 **Two conformance tests were written after the fact and are worth noting**, because the
 implementation caught an error in the specification's own fixture rather than the other way

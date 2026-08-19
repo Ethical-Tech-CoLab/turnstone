@@ -1,0 +1,178 @@
+/*
+ * capture.css — additions for the capture client.
+ *
+ * Layers on demo.css rather than duplicating it, so the tray, stage and sheet
+ * behave identically in both — including the stacking-context rule that keeps
+ * the tray clickable, which was expensive to learn once.
+ */
+
+.pill {
+  font: 600 10.5px/1 ui-monospace, Consolas, monospace;
+  padding: 5px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  white-space: nowrap;
+}
+.pill.is-warn { color: var(--warn); border-color: var(--warn); }
+
+/* A brief flash confirms a photograph was taken. On a phone in daylight the
+   shutter animation alone is easy to miss, and a contributor who is unsure
+   whether the shot happened will take it again. */
+.shot-flash {
+  position: absolute;
+  inset: 0;
+  background: #fff;
+  opacity: 0;
+  pointer-events: none;
+}
+.shot-flash.is-firing { animation: flash .22s ease-out; }
+@keyframes flash { from { opacity: .75; } to { opacity: 0; } }
+
+.steady-pill {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 14px;
+  border-radius: 999px;
+  font: 600 11.5px/1 ui-monospace, Consolas, monospace;
+  background: rgba(5, 8, 12, .8);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  backdrop-filter: blur(6px);
+}
+.steady-pill.is-steady { color: var(--ok); border-color: var(--ok); }
+
+.shutter { position: relative; display: grid; place-items: center; }
+.shutter.is-armed { background: var(--ok); }
+.shutter.is-busy { background: var(--accent); }
+.shutter-count {
+  font: 700 19px/1 ui-monospace, Consolas, monospace;
+  color: #0d1117;
+}
+
+.field {
+  display: block;
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+.field input, .field select {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  padding: 9px 10px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  color: var(--text);
+  /* 16px stops iOS zooming the page when a field takes focus. */
+  font-size: 16px;
+}
+.field input[type="number"] { width: auto; display: inline-block; }
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 0 10px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.check input { width: 18px; height: 18px; accent-color: var(--accent); }
+
+.btn-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 10px; }
+.btn {
+  padding: 9px 12px;
+  border-radius: 7px;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--text);
+  font: 600 12.5px/1 -apple-system, system-ui, sans-serif;
+  cursor: pointer;
+}
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+.btn-ghost { background: transparent; }
+.btn.is-on { border-color: var(--ok); color: var(--ok); }
+
+.seg { display: flex; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
+.seg-btn {
+  flex: 1;
+  padding: 9px;
+  background: transparent;
+  border: 0;
+  color: var(--muted);
+  font: 600 12.5px/1 ui-monospace, Consolas, monospace;
+  cursor: pointer;
+}
+.seg-btn.is-on { background: var(--panel-2); color: var(--accent); }
+
+.platform {
+  font: 600 11.5px/1.5 ui-monospace, Consolas, monospace;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+.platform.is-primary { color: var(--ok); border-color: var(--ok); }
+.platform.is-reduced { color: var(--warn); border-color: var(--warn); }
+
+.cam-state {
+  font: 11px/1.6 ui-monospace, Consolas, monospace;
+  color: var(--muted);
+  word-break: break-word;
+}
+
+.session-list { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.session-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.session-item:hover { border-color: var(--accent); }
+.session-item.is-current { border-color: var(--accent); background: rgba(0, 229, 255, .07); }
+.session-item .meta { color: var(--muted); font-family: ui-monospace, Consolas, monospace; font-size: 11px; }
+
+.sheet-grip { display: none; }
+.panel-scroll { min-height: 0; }
+
+@media (max-width: 900px), (max-height: 560px) {
+  .panel { padding: 0; display: flex; flex-direction: column; }
+  .panel::before { content: none; }
+
+  /* A real grip, so the sheet can be dragged rather than only tapped. */
+  .sheet-grip {
+    display: flex;
+    justify-content: center;
+    padding: 10px 0 8px;
+    flex: 0 0 auto;
+    cursor: grab;
+    background: var(--panel);
+    border-bottom: 1px solid var(--line);
+  }
+  .sheet-handle {
+    width: 40px;
+    height: 4px;
+    border-radius: 999px;
+    background: var(--muted);
+    opacity: .55;
+  }
+  .panel-scroll {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    padding: 12px 14px 20px;
+  }
+  /* Peek shows the summary; the grip is always reachable. */
+  .panel { transform: translateY(calc(100% - 132px)); }
+  .panel.is-open { transform: translateY(0); }
+}

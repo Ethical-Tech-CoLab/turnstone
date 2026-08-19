@@ -39,7 +39,8 @@ jobs:
           node --test \
             test/conformance.test.mjs \
             test/metrics.test.mjs \
-            test/guidance.test.mjs
+            test/guidance.test.mjs \
+            test/capture.test.mjs
       - name: Validate rubric files
         run: node tools/validate-rubrics.mjs
 
@@ -49,6 +50,12 @@ jobs:
       # class, which no unit test would have noticed.
       - name: Check the demo in headless Chrome
         run: node tools/demo-probe.mjs
+
+      # The claims that only a browser can prove: a session survives a reload,
+      # the tray stays reachable, and the client boots with the network off —
+      # which is the condition it will actually be used in.
+      - name: Check the capture client in headless Chrome
+        run: node tools/capture-probe.mjs
 
   build:
     name: Build site
@@ -75,21 +82,31 @@ jobs:
       - name: Stamp asset version for cache busting
         run: |
           V="${GITHUB_SHA::12}"
-          sed -i "s|href=\"css/demo.css\"|href=\"css/demo.css?v=$V\"|g" _site/index.html
-          sed -i "s|src=\"demo.js\"|src=\"demo.js?v=$V\"|g" _site/index.html
+          for page in _site/index.html _site/capture.html; do
+            sed -i "s|href=\"css/demo.css\"|href=\"css/demo.css?v=$V\"|g" "$page"
+            sed -i "s|href=\"css/capture.css\"|href=\"css/capture.css?v=$V\"|g" "$page"
+            sed -i "s|src=\"demo.js\"|src=\"demo.js?v=$V\"|g" "$page"
+            sed -i "s|src=\"capture.js\"|src=\"capture.js?v=$V\"|g" "$page"
+          done
           # ES module imports are separate requests and stay cached even behind
-          # a fresh demo.js, so they need stamping too.
-          for f in _site/demo.js _site/lib/*.js; do
+          # a fresh entry point, so they need stamping too.
+          for f in _site/demo.js _site/capture.js _site/lib/*.js; do
             sed -i -E "s|(from '\./[^']*\.js)'|\1?v=$V'|g" "$f"
             sed -i -E "s|(from '\.\./[^']*\.js)'|\1?v=$V'|g" "$f"
           done
-          sed -i "s|__TURNSTONE_BUILD__|$V|g" _site/demo.js
+          sed -i "s|__TURNSTONE_BUILD__|$V|g" _site/demo.js _site/capture.js _site/sw.js
 
           echo "--- verification ---"
           grep -o 'demo.css?v=[0-9a-f]*' _site/index.html | head -1
+          grep -o 'capture.js?v=[0-9a-f]*' _site/capture.html | head -1
           grep -o "from '\./lib/metrics.js?v=[0-9a-f]*'" _site/demo.js | head -1
           grep -o "from '\./metrics.js?v=[0-9a-f]*'" _site/lib/session.js | head -1
-          node --check _site/demo.js && echo "demo.js parses after rewrite"
+          # The service worker cache name must carry the build, or a deploy
+          # leaves every device serving the previous version permanently.
+          grep -o "turnstone-[0-9a-f]\{12\}" _site/sw.js | head -1
+          test -z "$(grep -l '__TURNSTONE_BUILD__' _site/sw.js _site/demo.js _site/capture.js || true)" \
+            && echo "build placeholder replaced everywhere"
+          node --check _site/demo.js && node --check _site/capture.js && echo "entry points parse after rewrite"
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

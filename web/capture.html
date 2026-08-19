@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Turnstone — capture</title>
+<meta name="description" content="Guided photogrammetry capture for cultural objects: coverage dial, one instruction at a time, and a session that survives.">
+<meta name="theme-color" content="#0d1117">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="css/demo.css">
+<link rel="stylesheet" href="css/capture.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <strong>Turnstone</strong>
+    <span class="sub" id="subjectLabel">capture</span>
+  </div>
+  <div class="topbar-right">
+    <span id="storeBadge" class="pill" title="Where this session is stored">…</span>
+    <span id="classBadge" class="badge badge-insufficient">insufficient</span>
+  </div>
+</header>
+
+<main>
+  <section class="stage-wrap">
+    <div id="stage" class="stage">
+      <video id="video" playsinline muted autoplay class="hidden"></video>
+      <canvas id="dial" class="dial"></canvas>
+
+      <div id="shotFlash" class="shot-flash"></div>
+
+      <div id="instruction" class="instruction hidden">
+        <span id="instructionText">Hold steady</span>
+      </div>
+
+      <div id="steadyPill" class="steady-pill hidden">
+        <span id="steadyText">moving</span>
+      </div>
+
+      <div id="empty" class="empty">
+        <h2>Record an object from every side.</h2>
+        <p>
+          Start the camera, then walk around the object taking photographs. The dial fills in
+          as you cover the viewing sphere, and one instruction at a time tells you what to fix.
+        </p>
+        <p class="muted">
+          Everything stays on this device. The session survives a reload, a phone call, or a
+          flat battery.
+        </p>
+        <p class="muted">
+          Not sure what any of this means? The
+          <a href="index.html">quality demo</a> explains what is being measured.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <nav class="tray" aria-label="Capture controls">
+    <button id="btnCamera" class="tray-btn" type="button">
+      <span class="tray-ico">◉</span><span class="tray-lab">Start</span>
+    </button>
+    <button id="btnAuto" class="tray-btn" type="button" disabled>
+      <span class="tray-ico">⏱</span><span class="tray-lab">Auto</span>
+    </button>
+    <button id="btnShoot" class="shutter" type="button" disabled aria-label="Take photograph">
+      <span id="shutterCount" class="shutter-count"></span>
+    </button>
+    <button id="btnFlip" class="tray-btn" type="button" disabled>
+      <span class="tray-ico">⟲</span><span class="tray-lab">Flip</span>
+    </button>
+    <button id="btnSheet" class="tray-btn" type="button">
+      <span class="tray-ico">▤</span><span class="tray-lab">Setup</span>
+    </button>
+  </nav>
+
+  <aside class="panel" id="panel">
+    <div class="sheet-grip" id="sheetGrip" role="button" tabindex="0" aria-label="Open or close setup">
+      <span class="sheet-handle"></span>
+    </div>
+    <div class="panel-scroll">
+
+      <div class="summary">
+        <div class="summary-row"><span class="k">fitness class</span><b id="clsValue">insufficient</b></div>
+        <div class="summary-row"><span class="k">score</span><b id="scoreValue">0<span class="unit">/100</span></b></div>
+        <div class="summary-row"><span class="k">limiting</span><b id="limitValue">—</b></div>
+        <div class="summary-row"><span class="k">frames</span><b id="frameValue">0</b></div>
+        <p id="summaryText" class="summary-note"></p>
+      </div>
+
+      <h3>1 · The object</h3>
+      <label class="field">Subject
+        <input id="subjName" type="text" placeholder="e.g. Bura askos" autocomplete="off">
+      </label>
+      <label class="field">Identifier
+        <input id="subjId" type="text" placeholder="accession or excavation number" autocomplete="off">
+      </label>
+      <label class="field">Material sensitivity
+        <select id="sensitivity">
+          <option value="ordinary" selected>Ordinary</option>
+          <option value="funerary">Funerary</option>
+          <option value="sacred">Sacred</option>
+        </select>
+      </label>
+      <p class="hint" id="sensitivityNote">
+        Funerary and sacred material defaults to source-community disclosure. A mesh is a
+        replication asset, and for such material visibility may itself be the harm.
+      </p>
+
+      <h3>2 · What is in shot</h3>
+      <label class="check">
+        <input id="hasScale" type="checkbox">
+        A calibrated scale bar is in frame
+      </label>
+      <label class="field" id="scaleLenWrap" hidden>Measured length of the bar
+        <input id="scaleLen" type="number" value="150" min="1" step="0.1"> mm
+      </label>
+      <label class="check">
+        <input id="hasColour" type="checkbox">
+        A colour reference target is in frame
+      </label>
+      <p class="hint">
+        Without a scale reference the model has shape but no size — and an object with no size
+        cannot be measured, compared against a written description, or matched to an
+        excavation record. It is the single highest-value thing to put in the frame.
+      </p>
+
+      <h3>3 · Camera</h3>
+      <div id="platformNote" class="platform">detecting…</div>
+      <div class="btn-row">
+        <button id="btnLock" class="btn" disabled>Lock focus + exposure</button>
+        <button id="btnSensors" class="btn">Enable motion sensors</button>
+      </div>
+      <p class="hint">
+        Autofocus silently changes the focal length, which invalidates the lens profile for
+        every frame after it. Locking the optics keeps one camera model valid for the whole
+        session.
+      </p>
+      <div id="camState" class="cam-state">camera not started</div>
+
+      <h3>4 · Target class</h3>
+      <div class="seg" id="targetSeg">
+        <button data-target="study" class="seg-btn is-on">study</button>
+        <button data-target="reference" class="seg-btn">reference</button>
+      </div>
+      <p class="hint" id="targetNote"></p>
+
+      <h3>Dimensions</h3>
+      <div id="dims" class="dims"></div>
+
+      <h3>5 · Session</h3>
+      <div class="btn-row">
+        <button id="btnExport" class="btn" disabled>Export session</button>
+        <button id="btnNew" class="btn btn-ghost">New session</button>
+      </div>
+      <div id="sessionList" class="session-list"></div>
+
+      <p class="foot">
+        <a href="index.html">Quality demo</a> ·
+        <a href="https://github.com/Ethical-Tech-CoLab/turnstone">Source</a> ·
+        <span id="buildTag" class="build">build dev</span>
+      </p>
+    </div>
+  </aside>
+</main>
+
+<div id="toast" class="toast hidden"></div>
+
+<script type="module" src="capture.js"></script>
+</body>
+</html>
