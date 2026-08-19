@@ -3,8 +3,14 @@
 *Research findings, feature list, and recommendations for a second capture tool: full 3D
 records of physical objects — statues, cultural artefacts, architectural fragments.*
 
-**Status:** proposal awaiting agreement on name and repository structure.
-`PHOTOGRAMMETRY-SPEC.md` will be written once those are settled.
+**Status:** recommendations made; specification written against them.
+[`PHOTOGRAMMETRY-SPEC.md`](PHOTOGRAMMETRY-SPEC.md) implements what §8–§9 recommend.
+
+> **How the name was settled.** Agreement was sought on the four decisions in §10 and was not
+> available, so the recommended options were adopted so the specification could proceed. The
+> name `Turnstone` is therefore **provisional**: it lives in the repository name and one
+> `PRODUCT_NAME` constant, so changing it is a rename rather than a refactor. The three
+> technical decisions are the ones argued for below and are reversible at Phase 0.
 
 **Research method.** 92 Tavily queries across five batches (open-source tools, proprietary
 products, heritage standards, capture technique, technical decisions), plus direct
@@ -445,16 +451,25 @@ sibling to Plumb's builder's instrument. One syllable, concrete, memorable.
 
 ---
 
-## 10. What I need agreement on
+## 10. Decisions taken
 
-1. **The name** — recommending **Turnstone**, with **Lathe** as the alternate.
-2. **Separate repository**, leaving Plumb's URL intact — rather than restructuring into a
-   monorepo.
-3. **AliceVision/Meshroom (MPL-2.0) as the default reconstruction backend**, with OpenMVS
-   available only behind an explicit AGPL acknowledgement.
-4. **The rubric ships as data**, with DPA's heritage rubric as the first instance.
+These four were put forward for agreement. Agreement was unavailable, so the recommended
+option was adopted in each case and carried into
+[`PHOTOGRAMMETRY-SPEC.md`](PHOTOGRAMMETRY-SPEC.md). Each is cheap to reverse at Phase 0, and
+each is flagged there.
 
-Once these are settled I will write `PHOTOGRAMMETRY-SPEC.md`.
+| # | Decision | Adopted | Reverse cost |
+|---|---|---|---|
+| 1 | **Name** | **Turnstone** (alternate: Lathe) | Rename — one constant + the repo name |
+| 2 | **Structure** | Separate repository; Plumb untouched | Low — nothing has moved yet |
+| 3 | **Backend** | AliceVision/Meshroom (MPL-2.0) default; OpenMVS opt-in behind an explicit AGPL acknowledgement | Low — backends are adapters behind one interface |
+| 4 | **Rubric** | Ships as JSON data, DPA's `heritage-v1` first | Low — it is a file |
+
+The one place the specification knowingly **contradicts** its source is §6.7: DPA marks
+surface completeness `liveMeasurable: true`, and the specification treats it as
+live-*estimable*, because you can orbit an object completely and never see inside a cavity.
+That needs settling with DPA rather than assuming, and is listed in the specification's open
+questions.
 
 ---
 
