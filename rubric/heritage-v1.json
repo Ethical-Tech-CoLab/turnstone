@@ -21,7 +21,7 @@
       "id": "angular-coverage",
       "label": "Angular coverage",
       "unit": "fraction of viewing sphere",
-      "why": "Surfaces you never pointed the camera at are reconstructed by guesswork or not at all. For a funerary vessel the underside and interior lip are exactly where potters' marks, repair seams and excavation damage sit â the features that distinguish this object from another of the same type.",
+      "why": "Surfaces you never pointed the camera at are reconstructed by guesswork or not at all. For a funerary vessel the underside and interior lip are exactly where potters' marks, repair seams and excavation damage sit — the features that distinguish this object from another of the same type.",
       "normalise": {
         "fn": "linear",
         "floor": 0.0,
@@ -32,7 +32,7 @@
         "study": 0.75,
         "indicative": 0.5
       },
-      "guidance": "Keep orbiting. Then raise the camera and orbit again from above, and once from below â one circle at eye level leaves the top and underside unrecorded.",
+      "guidance": "Keep orbiting. Then raise the camera and orbit again from above, and once from below — one circle at eye level leaves the top and underside unrecorded.",
       "liveMeasurable": true
     },
     {
@@ -50,14 +50,14 @@
         "study": 0.85,
         "indicative": 0.6
       },
-      "guidance": "Some surfaces are still hidden. Reposition the object â or move the camera into the recesses â so that cavities, undersides and areas behind handles are directly visible in at least a few frames.",
+      "guidance": "Some surfaces are still hidden. Reposition the object — or move the camera into the recesses — so that cavities, undersides and areas behind handles are directly visible in at least a few frames.",
       "liveMeasurable": true
     },
     {
       "id": "image-overlap",
       "label": "Image overlap",
       "unit": "mean overlap between adjacent frames",
-      "why": "Photogrammetry works by matching the same physical point across several photographs. Below roughly 60% overlap the matcher loses the thread and the reconstruction splits into fragments that cannot be aligned. CIPA guidance for close-range heritage work is 60â80%.",
+      "why": "Photogrammetry works by matching the same physical point across several photographs. Below roughly 60% overlap the matcher loses the thread and the reconstruction splits into fragments that cannot be aligned. CIPA guidance for close-range heritage work is 60–80%.",
       "normalise": {
         "fn": "linear",
         "floor": 0.35,
@@ -75,7 +75,7 @@
       "id": "sharpness",
       "label": "Sharpness",
       "unit": "variance of Laplacian",
-      "why": "Motion blur is the single most common reason a phone capture fails, and it is invisible on a small screen at capture time. Blurred frames do not merely add noise â they contribute wrong feature matches, which bends the reconstructed geometry rather than softening it.",
+      "why": "Motion blur is the single most common reason a phone capture fails, and it is invisible on a small screen at capture time. Blurred frames do not merely add noise — they contribute wrong feature matches, which bends the reconstructed geometry rather than softening it.",
       "normalise": {
         "fn": "logScale",
         "floor": 20.0,
@@ -93,7 +93,7 @@
       "id": "exposure",
       "label": "Exposure",
       "unit": "fraction of pixels clipped",
-      "why": "Clipped highlights and crushed shadows contain no recoverable detail. On glazed or burnished ceramic a blown highlight erases precisely the surface it sits on, and no amount of processing brings it back â the information was never recorded.",
+      "why": "Clipped highlights and crushed shadows contain no recoverable detail. On glazed or burnished ceramic a blown highlight erases precisely the surface it sits on, and no amount of processing brings it back — the information was never recorded.",
       "normalise": {
         "fn": "clippingFraction",
         "tolerance": 0.05
@@ -103,7 +103,7 @@
         "study": 0.65,
         "indicative": 0.4
       },
-      "guidance": "Highlights or shadows are clipping. Diffuse the light â bounce it off a wall or ceiling rather than pointing it at the object â and avoid direct sun and bare bulbs.",
+      "guidance": "Highlights or shadows are clipping. Diffuse the light — bounce it off a wall or ceiling rather than pointing it at the object — and avoid direct sun and bare bulbs.",
       "liveMeasurable": true
     },
     {
@@ -121,7 +121,7 @@
         "study": 0.5,
         "indicative": 0.25
       },
-      "guidance": "Move closer, or use a longer lens. Fill more of the frame with the object â the resolution of the record is set here and cannot be recovered later.",
+      "guidance": "Move closer, or use a longer lens. Fill more of the frame with the object — the resolution of the record is set here and cannot be recovered later.",
       "liveMeasurable": true
     },
     {
@@ -182,7 +182,7 @@
       "id": "device-metadata",
       "label": "Device metadata",
       "unit": "fraction of frames with complete metadata",
-      "why": "Focal length, sensor size and camera pose let a reconstruction be checked, and later re-run with better software. Frames stripped of metadata â as most images shared through messaging apps are â can still be used, but the result can no longer be independently verified.",
+      "why": "Focal length, sensor size and camera pose let a reconstruction be checked, and later re-run with better software. Frames stripped of metadata — as most images shared through messaging apps are — can still be used, but the result can no longer be independently verified.",
       "normalise": {
         "fn": "linear",
         "floor": 0.0,

@@ -191,6 +191,37 @@ test('C-9c · every dimension carries the text a contributor is shown', () => {
   }
 });
 
+test('C-9d · no mojibake in any operator-facing string', () => {
+  /*
+   * This shipped once and was only caught by looking at a screenshot: an
+   * em-dash appeared as "â€”" in the live guidance. The rubric had been
+   * generated through a round trip that decoded UTF-8 as Latin-1, so the
+   * corruption was baked into the file rather than introduced by the browser.
+   *
+   * Nothing else catches it. Every logic test passes on corrupted text, the
+   * JSON still parses, and the thresholds are still right — it is only wrong
+   * to a human reading it, which is precisely who these strings are for. It
+   * also quietly falsifies the claim that this is a faithful transcription.
+   *
+   * U+00E2 followed by a continuation-range character is the signature of
+   * UTF-8 bytes decoded as Latin-1.
+   */
+  const mojibake = /\u00e2[\u0080-\u00bf]|\u00c3[\u0080-\u00bf]\u00c2/;
+  for (const d of rubric.dimensions) {
+    for (const field of ['label', 'unit', 'why', 'guidance']) {
+      assert.ok(!mojibake.test(d[field] ?? ''),
+        `${d.id}.${field} contains mojibake: ${JSON.stringify((d[field] ?? '').slice(0, 90))}`);
+    }
+  }
+});
+
+test('C-9e · the rubric file is valid UTF-8 with no replacement characters', () => {
+  // A lossy decode leaves U+FFFD behind rather than failing, so a file can be
+  // "valid" and still have lost the character it was meant to carry.
+  const raw = readFileSync(join(HERE, '..', 'rubric', 'heritage-v1.json'), 'utf8');
+  assert.ok(!raw.includes('\uFFFD'), 'replacement character found — text was lost in an encoding step');
+});
+
 // ---------------------------------------------------------------- R-4.2
 
 test('R-4.2 · a rubric with an unsupported major version is refused', () => {

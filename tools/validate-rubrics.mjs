@@ -43,6 +43,17 @@ for (const f of files) {
       throw new Error(`dimensions missing operator-facing text: ${missing.map((d) => d.id).join(', ')}`);
     }
 
+    // Mojibake shipped once and was caught only by reading a screenshot. It
+    // passes every logic check: the JSON parses, the thresholds are right, and
+    // the text is wrong only to the human it was written for.
+    const mojibake = /\u00e2[\u0080-\u00bf]|\uFFFD/;
+    const corrupt = rubric.dimensions.filter(
+      (d) => ['label', 'unit', 'why', 'guidance'].some((k) => mojibake.test(d[k] ?? '')),
+    );
+    if (corrupt.length) {
+      throw new Error(`mojibake in: ${corrupt.map((d) => d.id).join(', ')} — check the encoding of whatever generated this file`);
+    }
+
     console.log(`ok    ${f}  ${rubric.dimensions.length} dimensions, probe class '${q.class}'`);
   } catch (err) {
     console.error(`FAIL  ${f}  ${err.message}`);
