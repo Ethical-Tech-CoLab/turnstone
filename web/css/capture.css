@@ -73,21 +73,32 @@
    * The rubric's guidance strings are written to be complete rather than
    * short — "Keep orbiting. Then raise the camera and orbit again from above,
    * and once from below — one circle at eye level leaves the top and underside
-   * unrecorded." is 150 characters and wrapped to six lines on a phone, which
-   * is both a wall of text over the viewfinder and tall enough to collide with
+   * unrecorded." is 150 characters and wraps to six lines on a phone, which is
+   * both a wall of text over the viewfinder and tall enough to collide with
    * the sheet.
+   *
+   * The clamp goes on the SPAN, not the pill: -webkit-line-clamp needs the
+   * element to be the -webkit-box itself, and putting it on the pill left the
+   * flex/padding box a different height from the clamped text, so a fourth
+   * line painted outside the rounded border. max-height is belt and braces,
+   * because a clamp that silently fails is a layout that silently breaks.
    *
    * Somebody walking backwards around a plinth reads the first line. The full
    * text stays available in the sheet, under the dimension it belongs to.
    */
   .instruction {
+    max-width: min(94%, 420px);
+    font-size: 12.5px;
+    line-height: 1.32;
+    max-height: calc(3 * 1.32em + 20px);
+    overflow: hidden;
+    padding: 10px 16px;
+  }
+  .instruction > span {
     display: -webkit-box;
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
-    max-width: min(94%, 420px);
-    font-size: 12.5px;
-    line-height: 1.3;
   }
 }
 

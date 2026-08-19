@@ -195,22 +195,29 @@ try {
    */
   const layout = await cdp.eval(`(() => {
     const empty = document.getElementById('empty');
-    const inst = document.getElementById('instruction').getBoundingClientRect();
+    const el = document.getElementById('instruction');
+    const inst = el.getBoundingClientRect();
     const panel = document.getElementById('panel').getBoundingClientRect();
     const dial = document.getElementById('dial').getBoundingClientRect();
     const cx = dial.left + dial.width / 2, cy = dial.top + dial.height / 2;
     const atDial = document.elementFromPoint(cx, cy);
+    const span = el.querySelector('span');
     return {
       emptyHidden: empty.classList.contains('hidden') || getComputedStyle(empty).display === 'none',
       instructionClear: inst.bottom <= panel.top + 1,
       instructionVisible: inst.height > 0 && inst.top >= 0,
       dialUnobstructed: !!atDial && !atDial.closest('#empty'),
+      // Text must not paint outside the pill's rounded border. A clamp that
+      // hides overflow without capping the box lets a fourth line escape.
+      textInsidePill: span.getBoundingClientRect().bottom <= inst.bottom + 1,
+      instHeight: Math.round(inst.height),
     };
   })()`);
   expect('the empty state is dismissed once frames exist', layout.emptyHidden === true);
   expect('nothing overlaps the coverage dial', layout.dialUnobstructed === true);
   expect('the instruction clears the sheet', layout.instructionClear === true);
   expect('the instruction is fully on screen', layout.instructionVisible === true);
+  expect('instruction text stays inside its pill', layout.textInsidePill === true, `pill ${layout.instHeight}px`);
 
   // A second elevation band should raise coverage, not merely add frames.
   const before2 = await cdp.eval(`window.__turnstone.ps.status().coverage.coverage`);
