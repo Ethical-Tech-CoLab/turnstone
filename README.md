@@ -6,10 +6,9 @@ A tool for photographing a statue, vessel, mask or carved fragment so that the r
 model is *worth something afterwards* — carrying a machine-readable statement of how good it
 is and what it may be relied upon for.
 
-> **Name provisional.** A turnstone is a shorebird that feeds by flipping stones over to see
-> what is underneath — the most-skipped part of object capture. The name reaches only this
-> folder and one constant, so changing it is a rename. See
-> [`PHOTOGRAMMETRY-CONCEPT.md` §9](PHOTOGRAMMETRY-CONCEPT.md).
+> A turnstone is a shorebird that feeds by flipping stones over to see what is underneath —
+> the most-skipped part of object capture, and the reason a capture rubric needs angular
+> coverage and surface completeness as separate dimensions at all.
 
 ---
 

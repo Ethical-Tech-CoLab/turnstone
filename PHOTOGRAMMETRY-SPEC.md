@@ -7,11 +7,10 @@ fragments — that are worth something afterwards.*
 **Companion** [`PHOTOGRAMMETRY-CONCEPT.md`](PHOTOGRAMMETRY-CONCEPT.md) — research, findings and
 the reasoning behind the recommendations this specification implements.
 
-> **On the name.** `Turnstone` is provisional. It was recommended in the concept document
-> and adopted so this specification could be written; it was not confirmed. A turnstone is a
-> shorebird that feeds by flipping stones to see underneath — which is the most-skipped part
-> of object capture. The name appears in exactly two places that matter (the repository name
-> and one `PRODUCT_NAME` constant), so changing it is a rename, not a refactor. See §12.
+> **On the name.** A turnstone is a shorebird that feeds by flipping stones to see underneath
+> — which is the most-skipped part of object capture, and the reason DPA's rubric needs
+> dimensions 1 and 2 at all. Confirmed; repository
+> [`Ethical-Tech-CoLab/turnstone`](https://github.com/Ethical-Tech-CoLab/turnstone).
 
 ---
 
@@ -308,9 +307,36 @@ silhouette octants have been foreground in the mask across the session.
 class SHALL be recomputed. If it drops, the record SHALL say so rather than retaining the
 optimistic capture-time class.
 
-*This is an honest divergence from DPA's rubric, which marks the dimension `liveMeasurable:
-true`. It is live-**estimable**, not live-measurable, and conflating those would tell a
-contributor a cavity was recorded when nothing had looked inside it.*
+> **OPEN QUESTION — OQ-1 · deferred by decision, not by oversight.**
+>
+> This is the one place the specification knowingly contradicts DPA, which marks the
+> dimension `liveMeasurable: true`.
+>
+> **Agreed resolution path:** leave it open. Resolve it against a *specific artefact* that
+> exposes the problem — a vessel with a deep cavity, a mask with an undercut rim, a figure
+> with an occluded reverse — and settle it on the fly with the real object in hand rather
+> than in the abstract now.
+>
+> **Why deferring is the right call rather than a dodge.** Both positions are defensible in
+> the abstract and neither can be shown superior without an object: DPA's reading keeps a
+> live signal on the dial where a contributor can act on it, and mine refuses to report a
+> recess as recorded when nothing has looked inside it. The disagreement only becomes
+> decidable when a real cavity produces a live estimate and a post-reconstruction truth that
+> differ by a specific amount.
+>
+> **What the implementation must therefore do in the meantime**, so the question stays
+> answerable rather than being closed by default:
+>
+> 1. Record **both** values — the capture-time estimate and the post-reconstruction truth —
+>    on every session, never overwriting the first with the second.
+> 2. Record their **difference**, so evidence accumulates automatically and the eventual
+>    decision rests on a distribution rather than on one memorable incident.
+> 3. Keep the `estimated` flag in the record (§9.1), so no consumer can mistake the
+>    capture-time figure for a measurement.
+>
+> If the two turn out to track closely across real objects, DPA is right and this section
+> should be withdrawn. If cavities routinely diverge, this section is right. Either way the
+> data to decide will exist by then, which is the point of deferring rather than guessing.
 
 ### 6.7 Lighting consistency
 
@@ -593,16 +619,25 @@ thresholds for all three classes are now pinned by a test.
 
 ## Appendix A — open questions
 
-1. **Name.** `Turnstone` provisional, unconfirmed. Alternate: `Lathe`.
-2. **Splats.** 3D Gaussian splatting (gsplat, Apache-2.0) gives better visual fidelity for
-   display but is not a mesh and does not measure. Recommended as a *display* output
-   alongside the mesh, never as the archival record — but this is not settled.
-3. **Surface completeness.** §6.7 knowingly diverges from DPA's rubric by treating this as
-   live-*estimable*. This needs agreement with DPA, and is the one place this specification
-   contradicts its source.
-4. **Source-community consent.** Inherited blocking gap (R-9.4). Cannot be closed by
-   engineering.
-5. **Where the sealing happens.** Whether capture-time C2PA sealing is feasible in a browser
-   PWA at all, given Plumb's finding that conformant claim signing needs X.509 with specific
-   EKUs and a Trust List CA. If not, `chainComplete` may be unreachable for web capture and
-   the honest answer is to say so rather than to weaken the definition.
+**OQ-1 · Surface completeness: live-measurable or live-estimable?**
+§6.6 knowingly contradicts DPA, which marks the dimension `liveMeasurable: true`.
+**Status: deferred by decision.** To be resolved against a specific artefact that exposes the
+problem — a vessel with a deep cavity, a mask with an undercut rim — and settled on the fly
+with the object in hand. Until then the implementation records both the capture-time estimate
+and the post-reconstruction truth, plus their difference, so the eventual decision rests on
+accumulated evidence rather than on argument. Full reasoning at §6.6.
+
+**OQ-2 · Name.** `Turnstone` — **confirmed**. Repository:
+`github.com/Ethical-Tech-CoLab/turnstone`.
+
+**OQ-3 · Gaussian splats.** 3D Gaussian splatting (gsplat, Apache-2.0) gives better visual
+fidelity for display but is not a mesh and does not measure. Recommended as a *display*
+output alongside the mesh, never as the archival record — not settled.
+
+**OQ-4 · Source-community consent.** Inherited blocking gap (R-9.4): the `source-community`
+disclosure tier was designed with no source-community input. Cannot be closed by engineering.
+
+**OQ-5 · Where the sealing happens.** Whether capture-time C2PA sealing is feasible in a
+browser PWA at all, given Plumb's finding that conformant claim signing needs X.509 with
+specific EKUs and a Trust List CA. If not, `chainComplete` may be unreachable for web capture
+and the honest answer is to say so rather than to weaken the definition.
