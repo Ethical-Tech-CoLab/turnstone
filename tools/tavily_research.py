@@ -7,7 +7,7 @@ works over REST, verified before this script was written. No substitute
 provider is used.
 
 Usage: python tools/tavily_research.py <batch-name>
-Writes: research-photogrammetry/raw/<batch>.json  and  <batch>.md
+Writes: research/raw/<batch>.json  and  research/<batch>.md
 """
 import json
 import os
@@ -22,7 +22,7 @@ KEY = os.environ.get("TAVILY_API_KEY")
 if not KEY:
     sys.exit("TAVILY_API_KEY is not set. Refusing to substitute another provider.")
 
-OUT = Path(__file__).resolve().parent.parent / "research-photogrammetry"
+OUT = Path(__file__).resolve().parent.parent / "research"
 (OUT / "raw").mkdir(parents=True, exist_ok=True)
 
 BATCHES = {

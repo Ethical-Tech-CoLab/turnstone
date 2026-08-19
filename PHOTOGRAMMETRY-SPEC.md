@@ -255,6 +255,21 @@ SHALL be recorded alongside as a cross-check. A disagreement greater than 10% in
 wrong focal length or a mis-scaled print, and SHALL be surfaced — this is the analogue of
 Plumb's hold-out check and catches the failure that otherwise silently rescales the model.
 
+**R-6.6.** Guidance SHALL express this dimension in **mm/px, not normalised units**.
+`heritage-v1` states thresholds of 0.75 / 0.5 / 0.25, which are meaningless to an operator.
+Inverted through DPA's `logScaleInverse(3.0, 0.1)` they mean:
+
+| Class | Requires |
+|---|---|
+| `reference` | **≤ 0.234 mm/px** |
+| `study` | ≤ 0.548 mm/px |
+| `indicative` | ≤ 1.282 mm/px |
+
+**This is a trap worth stating plainly: 0.25 mm/px reads as excellent and does not meet
+`reference`.** It was caught by the implementation disagreeing with this specification's own
+worked fixture. A conformance test now pins all three inverted values, so a change to the
+normalisation cannot silently move the real-world requirement.
+
 ### 6.5 Angular coverage
 
 The viewing sphere is discretised into bins:
@@ -275,13 +290,13 @@ needed for adequate overlap. A bin counts as visited when a frame's optical axis
 coverage = visited_bins / required_bins(target_class)
 ```
 
-**R-6.6.** Coverage SHALL be displayed as a **filled dial**, not a percentage. This is the
+**R-6.7.** Coverage SHALL be displayed as a **filled dial**, not a percentage. This is the
 one interaction proprietary tools have converged on independently (Apple's segmented capture
 dial), and it converts an abstract number into an obvious spatial gap.
 
 ### 6.6 Surface completeness
 
-**R-6.7.** During capture this dimension is an **estimate and SHALL be labelled as one.**
+**R-6.8.** During capture this dimension is an **estimate and SHALL be labelled as one.**
 It cannot be truly known before reconstruction: you can orbit an object completely and never
 see inside a cavity or behind a handle.
 
@@ -289,7 +304,7 @@ Live estimate: fraction of the object silhouette that has been observed at a
 grazing-to-normal incidence in at least three frames, approximated by tracking which
 silhouette octants have been foreground in the mask across the session.
 
-**R-6.8.** After reconstruction the authoritative value SHALL replace the estimate, and the
+**R-6.9.** After reconstruction the authoritative value SHALL replace the estimate, and the
 class SHALL be recomputed. If it drops, the record SHALL say so rather than retaining the
 optimistic capture-time class.
 
@@ -315,7 +330,7 @@ Detected from the printed target (§7). Reported as `calibrated` (certified mark
 and its measured length agrees with its declared length within tolerance), `ar-derived`
 (pose-based metric scale only), or `absent`.
 
-**R-6.9.** `ar-derived` SHALL NOT satisfy `reference` class. AR scale drifts; a reference
+**R-6.10.** `ar-derived` SHALL NOT satisfy `reference` class. AR scale drifts; a reference
 record's size must come from something physical that was in the photograph.
 
 ### 6.10 Device metadata — deferred
@@ -512,42 +527,67 @@ an **IIIF 3D** manifest for delivery.
 
 A build is conformant when these pass. Each exists because getting it wrong is plausible.
 
-| # | Assertion |
-|---|---|
-| C-1 | Class equals the worst dimension, never the mean |
-| C-2 | Score > 80 with class `indicative` when only the scale reference is missing (R-5.4) |
-| C-3 | An unmeasured dimension yields `not measured`, never a pass |
-| C-4 | Record construction throws without the legitimacy disclaimer |
-| C-5 | Funerary and sacred default to `source-community` |
-| C-6 | `chainComplete` false when any source image is unsealed |
-| C-7 | No module imports a provenance-confidence symbol (R-10.3) |
-| C-8 | Overlap formula matches the §6.3 table within 0.5° across the FOV range |
-| C-9 | `heritage-v1` thresholds match DPA's `rubric.ts` exactly |
-| C-10 | Guidance returns exactly one instruction, stable under hysteresis across jittering input |
-| C-11 | `ar-derived` scale never permits `reference` |
-| C-12 | Source images are byte-identical after a full round trip |
-| C-13 | Reconstruction is idempotent on session content hash |
-| C-14 | Post-reconstruction surface completeness can *lower* the class, and the record records that it did |
+| # | Assertion | Status |
+|---|---|---|
+| C-1 | Class equals the worst dimension, never the mean | **implemented** |
+| C-2 | Score > 80 with class `indicative` when only the scale reference is missing (R-5.4) | **implemented** |
+| C-3 | An unmeasured dimension yields `not measured`, never a pass | **implemented** |
+| C-4 | Record construction throws without the legitimacy disclaimer | phase 5 |
+| C-5 | Funerary and sacred default to `source-community` | phase 5 |
+| C-6 | `chainComplete` false when any source image is unsealed | phase 5 |
+| C-7 | No module imports a provenance-confidence symbol (R-10.3) | phase 6 |
+| C-8 | Overlap formula matches the §6.3 table within 0.5° across the FOV range | **implemented** |
+| C-9 | `heritage-v1` thresholds match DPA's `rubric.ts` exactly | **implemented** |
+| C-10 | Guidance returns exactly one instruction, stable under hysteresis across jittering input | phase 2 |
+| C-11 | `ar-derived` scale never permits `reference` | **implemented** |
+| C-12 | Source images are byte-identical after a full round trip | phase 4 |
+| C-13 | Reconstruction is idempotent on session content hash | phase 4 |
+| C-14 | Post-reconstruction surface completeness can *lower* the class, and the record records that it did | phase 4 |
 
 ---
 
 ## 12. Delivery plan
 
-| Phase | Contents | Proves |
+| Phase | Contents | Status |
 |---|---|---|
-| **0 · Relocate** | New repository; copy Plumb's `camera.js`, `level.js`, `upload.js`, `branding.js`; rubric loader + `heritage-v1`; conformance tests C-1…C-5, C-9 | The rubric runs against fixtures, as DPA's `/capture` does today |
-| **1 · Metrics** | §6 extractors against a fixture image corpus with known-good and known-bad frames | The gap DPA names is closed |
-| **2 · Capture client** | Coverage dial, guidance loop, auto-capture, session store, offline | A contributor can complete a session and know its class before leaving |
-| **3 · Target** | Printable SVG target, marker detection, measured-length entry, masking | Scale and colour dimensions become achievable |
-| **4 · Server** | Docker, AliceVision backend, job model, outputs | A mesh comes out |
-| **5 · Binding** | `ReconstructionBinding`, perceptual mesh hash, C-6 | The chain reaches the mesh |
-| **6 · Interop** | CRMdig + IIIF 3D export, DPA passport wiring | A museum's systems can read it |
+| **0 · Foundation** | Project folder; rubric as data + `heritage-v1`; scoring engine; overlap geometry; conformance tests C-1, C-2, C-3, C-8, C-9, C-11 | **done** — 18 tests passing |
+| **1 · Metrics** | §6 extractors against a fixture corpus of known-good and known-bad frames | next — closes the gap DPA names |
+| **2 · Capture client** | Coverage dial, guidance loop, auto-capture, session store, offline | |
+| **3 · Target** | Printable SVG target, marker detection, measured-length entry, masking | |
+| **4 · Server** | Docker, AliceVision backend, job model, outputs | |
+| **5 · Binding** | `ReconstructionBinding`, perceptual mesh hash, C-6 | |
+| **6 · Interop** | CRMdig + IIIF 3D export, DPA passport wiring | |
+| **7 · Relocate** | Push `turnstone/` to its own repository once the name is confirmed | gated on the name |
 
-**Phase 0 note on relocation.** Both documents currently live in the Plumb repository because
-that is where the work was done. They move wholesale to the new repository at Phase 0; the
-Plumb repository keeps only a one-line pointer. Nothing in Plumb depends on them, and Plumb's
-Pages workflow is path-filtered to `prototype/**`, `HOW-TO-PLUMB.md` and `docs/assets/**`, so
-their presence has not affected its deployment and their removal will not either.
+### Phase 0, as built
+
+```
+turnstone/
+  README.md
+  PHOTOGRAMMETRY-CONCEPT.md   research, findings, decisions
+  PHOTOGRAMMETRY-SPEC.md      this document
+  rubric/heritage-v1.json     DPA's ten dimensions, transcribed mechanically
+  lib/rubric.js               loader + scoring (§4, §5)
+  lib/overlap.js              orbit geometry (§6.3)
+  test/conformance.test.mjs   18 tests
+  tools/validate-rubrics.mjs  CI guard for hand-edited rubrics
+  tools/tavily_research.py    the research harness
+  research/                   92 queries, raw + summarised
+```
+
+**On relocation.** The work is staged in the Plumb repository under `turnstone/` because that
+is where it was done. It is self-contained: nothing outside the folder references it, it has
+its own workflow (`.github/workflows/turnstone.yml`), and Plumb's deploy workflow is
+path-filtered to `prototype/**`, `HOW-TO-PLUMB.md` and `docs/assets/**`, so the two cannot
+interfere. Moving it is `git mv` into a fresh repository plus one workflow file — deliberately
+kept that cheap, because the name is not yet confirmed.
+
+**Two conformance tests were written after the fact and are worth noting**, because the
+implementation caught an error in the specification's own fixture rather than the other way
+round: a ground sample distance of 0.25 mm/px reads as excellent and does **not** meet the
+`reference` threshold, which inverts to **0.234 mm/px**. That number is what a field guide
+should quote; "0.75 normalised" is not an instruction anyone can act on. The inverted
+thresholds for all three classes are now pinned by a test.
 
 ---
 

@@ -15,7 +15,7 @@ records of physical objects — statues, cultural artefacts, architectural fragm
 **Research method.** 92 Tavily queries across five batches (open-source tools, proprietary
 products, heritage standards, capture technique, technical decisions), plus direct
 verification of licence files and repository status through the GitHub API. Raw results are
-in [`research-photogrammetry/`](research-photogrammetry). Where a Tavily summary made a
+in [`research/`](research). Where a Tavily summary made a
 load-bearing claim — particularly about licensing — it was checked against the primary
 source, and in two cases the summary was materially incomplete. Those are flagged below.
 
@@ -477,13 +477,13 @@ questions.
 
 | Batch | Queries | File |
 |---|---|---|
-| Open-source tools | 18 | `research-photogrammetry/oss.md` |
-| Proprietary products | 16 | `research-photogrammetry/proprietary.md` |
-| Heritage standards | 20 | `research-photogrammetry/heritage.md` |
-| Capture technique | 20 | `research-photogrammetry/process.md` |
-| Technical decisions | 18 | `research-photogrammetry/decisions.md` |
+| Open-source tools | 18 | `research/oss.md` |
+| Proprietary products | 16 | `research/proprietary.md` |
+| Heritage standards | 20 | `research/heritage.md` |
+| Capture technique | 20 | `research/process.md` |
+| Technical decisions | 18 | `research/decisions.md` |
 
-Raw JSON responses are in `research-photogrammetry/raw/`. The harness is
+Raw JSON responses are in `research/raw/`. The harness is
 [`tools/tavily_research.py`](tools/tavily_research.py); it calls the Tavily REST API
 directly, because the Tavily MCP server in this environment carries a stale key and returns
 `Invalid API key`. No substitute provider was used.

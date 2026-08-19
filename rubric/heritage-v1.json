@@ -1,0 +1,200 @@
+{
+  "schemaVersion": "1.0",
+  "id": "heritage-v1",
+  "version": "1.0.0",
+  "title": "Cultural heritage object capture",
+  "source": {
+    "programme": "Ethical-Tech-CoLab/DPA",
+    "document": "docs/CAPTURE-PROTOCOL.md",
+    "implementation": "packages/capture/src/rubric.ts",
+    "note": "Transcribed mechanically from the DPA source, not retyped. The individual measures are standard practice; the bands are DPA's and are a starting point for negotiation, not a claim of authority."
+  },
+  "classes": [
+    "insufficient",
+    "indicative",
+    "study",
+    "reference"
+  ],
+  "classIsWorstDimension": true,
+  "dimensions": [
+    {
+      "id": "angular-coverage",
+      "label": "Angular coverage",
+      "unit": "fraction of viewing sphere",
+      "why": "Surfaces you never pointed the camera at are reconstructed by guesswork or not at all. For a funerary vessel the underside and interior lip are exactly where potters' marks, repair seams and excavation damage sit â the features that distinguish this object from another of the same type.",
+      "normalise": {
+        "fn": "linear",
+        "floor": 0.0,
+        "ceil": 1.0
+      },
+      "thresholds": {
+        "reference": 0.9,
+        "study": 0.75,
+        "indicative": 0.5
+      },
+      "guidance": "Keep orbiting. Then raise the camera and orbit again from above, and once from below â one circle at eye level leaves the top and underside unrecorded.",
+      "liveMeasurable": true
+    },
+    {
+      "id": "surface-completeness",
+      "label": "Surface completeness",
+      "unit": "fraction of surface observed",
+      "why": "Distinct from angular coverage: you can orbit an object fully and still never see inside a cavity or behind a handle. Occluded regions become holes in the mesh, and a hole where a maker's mark should be is indistinguishable from an object that never had one.",
+      "normalise": {
+        "fn": "linear",
+        "floor": 0.0,
+        "ceil": 1.0
+      },
+      "thresholds": {
+        "reference": 0.95,
+        "study": 0.85,
+        "indicative": 0.6
+      },
+      "guidance": "Some surfaces are still hidden. Reposition the object â or move the camera into the recesses â so that cavities, undersides and areas behind handles are directly visible in at least a few frames.",
+      "liveMeasurable": true
+    },
+    {
+      "id": "image-overlap",
+      "label": "Image overlap",
+      "unit": "mean overlap between adjacent frames",
+      "why": "Photogrammetry works by matching the same physical point across several photographs. Below roughly 60% overlap the matcher loses the thread and the reconstruction splits into fragments that cannot be aligned. CIPA guidance for close-range heritage work is 60â80%.",
+      "normalise": {
+        "fn": "linear",
+        "floor": 0.35,
+        "ceil": 0.85
+      },
+      "thresholds": {
+        "reference": 0.78,
+        "study": 0.6,
+        "indicative": 0.4
+      },
+      "guidance": "Move more slowly between shots. Each photograph should still contain about three-quarters of what the previous one showed.",
+      "liveMeasurable": true
+    },
+    {
+      "id": "sharpness",
+      "label": "Sharpness",
+      "unit": "variance of Laplacian",
+      "why": "Motion blur is the single most common reason a phone capture fails, and it is invisible on a small screen at capture time. Blurred frames do not merely add noise â they contribute wrong feature matches, which bends the reconstructed geometry rather than softening it.",
+      "normalise": {
+        "fn": "logScale",
+        "floor": 20.0,
+        "ceil": 500.0
+      },
+      "thresholds": {
+        "reference": 0.7,
+        "study": 0.5,
+        "indicative": 0.3
+      },
+      "guidance": "Frames are coming out soft. Brace your elbows, pause briefly before each shot, and add light rather than letting the phone lengthen its exposure.",
+      "liveMeasurable": true
+    },
+    {
+      "id": "exposure",
+      "label": "Exposure",
+      "unit": "fraction of pixels clipped",
+      "why": "Clipped highlights and crushed shadows contain no recoverable detail. On glazed or burnished ceramic a blown highlight erases precisely the surface it sits on, and no amount of processing brings it back â the information was never recorded.",
+      "normalise": {
+        "fn": "clippingFraction",
+        "tolerance": 0.05
+      },
+      "thresholds": {
+        "reference": 0.85,
+        "study": 0.65,
+        "indicative": 0.4
+      },
+      "guidance": "Highlights or shadows are clipping. Diffuse the light â bounce it off a wall or ceiling rather than pointing it at the object â and avoid direct sun and bare bulbs.",
+      "liveMeasurable": true
+    },
+    {
+      "id": "ground-sample-distance",
+      "label": "Ground sample distance",
+      "unit": "mm per pixel",
+      "why": "The real resolution of the record: how much of the object one pixel covers. It sets the smallest feature that can ever be recovered. Tool marks, incision and slip decoration on West African terracotta are sub-millimetre; a 2 mm/px capture cannot see them and never will.",
+      "normalise": {
+        "fn": "logScaleInverse",
+        "worst": 3.0,
+        "best": 0.1
+      },
+      "thresholds": {
+        "reference": 0.75,
+        "study": 0.5,
+        "indicative": 0.25
+      },
+      "guidance": "Move closer, or use a longer lens. Fill more of the frame with the object â the resolution of the record is set here and cannot be recovered later.",
+      "liveMeasurable": true
+    },
+    {
+      "id": "scale-reference",
+      "label": "Scale reference",
+      "unit": "present / AR-derived / absent",
+      "why": "Without a calibrated scale in shot, the model has shape but no size, and an object with no size cannot be measured, compared against a written description, or matched to an excavation record. Phone AR tracking gives approximate metric scale; for anything intended as a reference record a physical scale bar remains the standard.",
+      "normalise": {
+        "fn": "linear",
+        "floor": 0.0,
+        "ceil": 1.0
+      },
+      "thresholds": {
+        "reference": 1.0,
+        "study": 0.5,
+        "indicative": 0.0
+      },
+      "guidance": "Place a calibrated scale bar in the scene, visible in several frames. Without it this capture cannot be used to measure the object.",
+      "liveMeasurable": true
+    },
+    {
+      "id": "colour-reference",
+      "label": "Colour reference",
+      "unit": "present / absent",
+      "why": "Condition assessment depends on colour being comparable across captures years apart. Without a colour target in shot, the record carries whatever cast the room lighting had, and a later capture cannot distinguish genuine deterioration from a different set of light bulbs.",
+      "normalise": {
+        "fn": "linear",
+        "floor": 0.0,
+        "ceil": 1.0
+      },
+      "thresholds": {
+        "reference": 1.0,
+        "study": 0.0,
+        "indicative": 0.0
+      },
+      "guidance": "Include a colour reference target in a few frames so that colour in this capture can be compared with future ones.",
+      "liveMeasurable": true
+    },
+    {
+      "id": "lighting-consistency",
+      "label": "Lighting consistency",
+      "unit": "consistency across frames",
+      "why": "If lighting changes while you orbit, shadows move across the surface and the matcher treats a moving shadow edge as a physical feature. This bakes shading into the texture and can emboss shadow edges into the geometry itself.",
+      "normalise": {
+        "fn": "linear",
+        "floor": 0.0,
+        "ceil": 1.0
+      },
+      "thresholds": {
+        "reference": 0.85,
+        "study": 0.65,
+        "indicative": 0.4
+      },
+      "guidance": "Light is changing as you move. Use even, diffuse light that does not move with the camera, and keep your own shadow off the object.",
+      "liveMeasurable": true
+    },
+    {
+      "id": "device-metadata",
+      "label": "Device metadata",
+      "unit": "fraction of frames with complete metadata",
+      "why": "Focal length, sensor size and camera pose let a reconstruction be checked, and later re-run with better software. Frames stripped of metadata â as most images shared through messaging apps are â can still be used, but the result can no longer be independently verified.",
+      "normalise": {
+        "fn": "linear",
+        "floor": 0.0,
+        "ceil": 1.0
+      },
+      "thresholds": {
+        "reference": 0.95,
+        "study": 0.8,
+        "indicative": 0.5
+      },
+      "guidance": "Metadata is missing from some frames. Transfer the originals directly rather than through a messaging app, which strips it.",
+      "liveMeasurable": false
+    }
+  ]
+}
