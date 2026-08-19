@@ -1,0 +1,344 @@
+/*
+ * demo.css — Turnstone quality demo.
+ *
+ * Camera-first on a phone, two-column on a desktop. The layout lessons are
+ * carried over from Plumb rather than relearned: the control tray is fixed and
+ * can never scroll away, and every viewport below the two-column breakpoint
+ * uses the fixed layout so a phone in landscape does not become a scrolling
+ * document.
+ */
+
+:root {
+  --bg: #0d1117;
+  --panel: #161b22;
+  --panel-2: #1c2230;
+  --line: #30363d;
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --accent: #00e5ff;
+  --ok: #3fb950;
+  --warn: #d29922;
+  --danger: #ff4d6d;
+  --topbar-h: 46px;
+  --tray-h: 72px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+html, body { max-width: 100%; overflow-x: hidden; }
+
+/* ---------------------------------------------------------------- topbar */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+.brand strong { font-size: 16px; letter-spacing: .2px; }
+.brand .sub { color: var(--muted); margin-left: 10px; font-size: 12.5px; }
+.topbar-right { display: flex; align-items: center; gap: 8px; min-width: 0; }
+
+.badge {
+  font: 600 12px/1 ui-monospace, Consolas, monospace;
+  padding: 7px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  white-space: nowrap;
+}
+.badge-insufficient { color: var(--danger); border-color: var(--danger); }
+.badge-indicative   { color: var(--warn);   border-color: var(--warn); }
+.badge-study        { color: var(--accent); border-color: var(--accent); }
+.badge-reference    { color: var(--ok);     border-color: var(--ok); }
+
+/* ------------------------------------------------------------------ main */
+main {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  grid-template-rows: 1fr auto;
+  gap: 12px;
+  padding: 12px;
+  height: calc(100vh - var(--topbar-h));
+  height: calc(100dvh - var(--topbar-h));
+}
+.stage-wrap { grid-column: 1; grid-row: 1; display: flex; flex-direction: column; min-width: 0; }
+.tray { grid-column: 1; grid-row: 2; }
+.panel { grid-column: 2; grid-row: 1 / span 2; }
+
+.stage {
+  position: relative;
+  flex: 1;
+  min-height: 300px;
+  background: #05080c;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.stage video, .stage canvas {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  max-width: 100%;
+  max-height: 100%;
+  display: block;
+}
+.stage video { object-fit: contain; }
+.hidden { display: none !important; }
+
+.dial { pointer-events: none; }
+
+.instruction {
+  position: absolute;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  max-width: min(92%, 460px);
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: rgba(5, 8, 12, .86);
+  border: 1px solid var(--accent);
+  color: var(--text);
+  font: 600 13.5px/1.35 -apple-system, system-ui, sans-serif;
+  text-align: center;
+  backdrop-filter: blur(6px);
+}
+.instruction.is-ok { border-color: var(--ok); }
+.instruction.is-blocking { border-color: var(--danger); }
+
+.empty {
+  position: relative;
+  max-width: 460px;
+  padding: 24px;
+  color: var(--muted);
+}
+.empty h2 { color: var(--text); font-size: 17px; margin: 0 0 12px; }
+.empty p { margin: 8px 0; }
+.empty .muted { font-size: 13px; opacity: .85; margin-top: 16px; }
+
+/* ------------------------------------------------------------------ tray */
+.tray {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+}
+.tray-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-width: 60px;
+  padding: 6px 8px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font: 600 10.5px/1 -apple-system, system-ui, sans-serif;
+}
+.tray-ico { font-size: 18px; line-height: 1; }
+.tray-btn:disabled { opacity: .35; cursor: not-allowed; }
+.tray-btn.is-on { color: var(--accent); border-color: var(--accent); }
+.tray-btn:active:not(:disabled) { background: rgba(255, 255, 255, .07); }
+
+.shutter {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: 4px solid #0d1117;
+  outline: 2px solid rgba(255, 255, 255, .5);
+  background: rgba(255, 255, 255, .92);
+  cursor: pointer;
+  flex: 0 0 auto;
+  transition: transform .1s ease, background .2s ease;
+}
+.shutter:active:not(:disabled) { transform: scale(.93); }
+.shutter:disabled { opacity: .4; cursor: not-allowed; }
+
+/* ----------------------------------------------------------------- panel */
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow-y: auto;
+  min-height: 0;
+  padding: 14px;
+}
+.panel h3 {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--muted);
+  margin: 18px 0 8px;
+}
+.hint { color: var(--muted); font-size: 12.5px; margin: 0 0 12px; }
+
+.summary {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  background: rgba(0, 0, 0, .2);
+}
+.summary-row {
+  display: grid;
+  grid-template-columns: 7.5em 1fr;
+  gap: 8px;
+  align-items: baseline;
+  font: 600 13px/1.8 ui-monospace, Consolas, monospace;
+}
+.summary-row .k { color: var(--muted); font-weight: 500; }
+.summary-row b { font-variant-numeric: tabular-nums; }
+.summary-row .unit { color: var(--muted); font-weight: 400; font-size: 11.5px; }
+.summary-note { color: var(--muted); font-size: 12px; margin: 10px 0 0; }
+
+.dims { display: flex; flex-direction: column; gap: 6px; }
+.dim {
+  border: 1px solid var(--line);
+  border-left-width: 3px;
+  border-radius: 6px;
+  padding: 8px 10px;
+  background: rgba(0, 0, 0, .15);
+}
+.dim-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  font: 600 12.5px/1.4 -apple-system, system-ui, sans-serif;
+}
+.dim-val {
+  font: 600 11.5px/1.4 ui-monospace, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+.dim-bar { height: 4px; border-radius: 2px; background: var(--panel-2); margin-top: 6px; overflow: hidden; }
+.dim-bar span { display: block; height: 100%; border-radius: 2px; transition: width .25s ease; }
+.dim-why { color: var(--muted); font-size: 11.5px; margin-top: 6px; display: none; }
+.dim.is-limiting .dim-why { display: block; }
+
+.dim.state-ok        { border-left-color: var(--ok); }
+.dim.state-attention { border-left-color: var(--warn); }
+.dim.state-blocking  { border-left-color: var(--danger); }
+.dim.state-unknown   { border-left-color: var(--muted); }
+.dim.state-deferred  { border-left-color: var(--muted); opacity: .72; }
+.dim.is-limiting     { background: rgba(0, 229, 255, .07); border-color: var(--accent); }
+
+.dim-tag {
+  font: 600 9.5px/1 ui-monospace, monospace;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  padding: 3px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--line);
+  color: var(--muted);
+}
+
+details { border: 1px solid var(--line); border-radius: 8px; margin-top: 16px; }
+summary { padding: 10px 12px; cursor: pointer; font-weight: 600; font-size: 13px; }
+.pad { padding: 0 12px 12px; }
+.pad p { color: var(--muted); font-size: 12.5px; }
+code { background: var(--panel-2); padding: 1px 5px; border-radius: 4px; font-size: 11.5px; }
+
+.foot { color: var(--muted); font-size: 11.5px; margin-top: 16px; }
+.foot a { color: var(--accent); }
+.build { font-family: ui-monospace, Consolas, monospace; opacity: .7; }
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--tray-h) + 20px);
+  transform: translateX(-50%);
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 13px;
+  z-index: 50;
+  max-width: 90vw;
+}
+
+/*
+ * Camera-first below the two-column breakpoint, and on any short viewport.
+ * A phone in landscape is ~844x390 — not narrow, emphatically a phone, and a
+ * capture tool has no business becoming a scrolling document on rotation.
+ */
+@media (max-width: 900px), (max-height: 560px) {
+  .brand .sub { display: none; }
+
+  main {
+    display: block;
+    padding: 0;
+    height: auto;
+  }
+  .stage-wrap, .tray, .panel { grid-column: auto; grid-row: auto; }
+
+  .stage-wrap {
+    position: fixed;
+    top: var(--topbar-h);
+    left: 0;
+    right: 0;
+    bottom: var(--tray-h);
+    gap: 0;
+    /*
+     * Stays BELOW the panel and the tray. This element creates a stacking
+     * context, so anything nested inside it is trapped at this level — which is
+     * why the tray is a sibling rather than a child.
+     */
+    z-index: 1;
+  }
+  .stage { border-radius: 0; border-left: 0; border-right: 0; }
+
+  .tray {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    z-index: 20;
+    gap: 6px;
+    justify-content: space-around;
+    border-radius: 0;
+    border-left: 0; border-right: 0; border-bottom: 0;
+    padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px));
+  }
+  .shutter { width: 54px; height: 54px; }
+  .tray-btn { min-width: 52px; padding: 4px 2px; }
+
+  /* The panel slides up from above the tray, so the shutter is never covered. */
+  .panel {
+    position: fixed;
+    left: 0; right: 0;
+    bottom: var(--tray-h);
+    z-index: 10;
+    height: calc(100dvh - var(--topbar-h) - var(--tray-h) - 12px);
+    max-height: 78vh;
+    border-radius: 16px 16px 0 0;
+    border-left: 0; border-right: 0; border-bottom: 0;
+    box-shadow: 0 -6px 24px rgba(0, 0, 0, .55);
+    transform: translateY(calc(100% - 128px));
+    transition: transform .28s cubic-bezier(.32, .72, 0, 1);
+  }
+  .panel.is-open { transform: translateY(0); }
+  .panel::before {
+    content: "";
+    display: block;
+    width: 40px; height: 4px;
+    border-radius: 999px;
+    background: var(--muted);
+    opacity: .55;
+    margin: -4px auto 10px;
+  }
+}

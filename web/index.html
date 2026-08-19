@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Turnstone — capture quality, measured live</title>
+<meta name="description" content="Turnstone measures photogrammetry capture quality from actual pixels: sharpness, exposure, overlap, coverage and lighting, with one instruction at a time.">
+<link rel="stylesheet" href="css/demo.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <strong>Turnstone</strong>
+    <span class="sub">capture quality, measured live</span>
+  </div>
+  <div class="topbar-right">
+    <span id="classBadge" class="badge badge-insufficient">insufficient</span>
+  </div>
+</header>
+
+<main>
+  <!-- ===================== STAGE ===================== -->
+  <section class="stage-wrap">
+    <div id="stage" class="stage">
+      <video id="video" playsinline muted autoplay class="hidden"></video>
+      <canvas id="still" class="hidden"></canvas>
+      <canvas id="dial" class="dial"></canvas>
+
+      <div id="instruction" class="instruction hidden">
+        <span id="instructionText">Hold steady</span>
+      </div>
+
+      <div id="empty" class="empty">
+        <h2>This page measures capture quality from real pixels.</h2>
+        <p>
+          Every number is computed from the image in front of you — variance of the Laplacian
+          for focus, per-channel clipping for exposure, angular bins for coverage. Nothing
+          here is simulated.
+        </p>
+        <p class="muted">
+          <strong>Run demo</strong> watches a synthetic session score itself.
+          <strong>Camera</strong> points it at a real object.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!--
+    The tray is a SIBLING of the panel, not a child of the stage.
+    On mobile .stage-wrap is a fixed, z-indexed element, which creates a
+    stacking context — so a tray nested inside it could never paint above the
+    sheet however high its own z-index went. Its buttons were unclickable.
+  -->
+  <nav class="tray" aria-label="Controls">
+    <button id="btnDemo" class="tray-btn" type="button">
+      <span class="tray-ico">▶</span><span class="tray-lab">Run demo</span>
+    </button>
+    <button id="btnCamera" class="tray-btn" type="button">
+      <span class="tray-ico">◉</span><span class="tray-lab">Camera</span>
+    </button>
+    <button id="btnShoot" class="shutter" type="button" disabled aria-label="Capture a frame"></button>
+    <button id="btnScale" class="tray-btn" type="button">
+      <span class="tray-ico">▭</span><span class="tray-lab">Scale bar</span>
+    </button>
+    <button id="btnReset" class="tray-btn" type="button">
+      <span class="tray-ico">↺</span><span class="tray-lab">Reset</span>
+    </button>
+  </nav>
+
+  <!-- ===================== PANEL ===================== -->
+  <aside class="panel">
+    <div class="summary">
+      <div class="summary-row">
+        <span class="k">fitness class</span><b id="clsValue">insufficient</b>
+      </div>
+      <div class="summary-row">
+        <span class="k">score</span><b id="scoreValue">0<span class="unit">/100</span></b>
+      </div>
+      <div class="summary-row">
+        <span class="k">limiting</span><b id="limitValue">—</b>
+      </div>
+      <div class="summary-row">
+        <span class="k">frames</span><b id="frameValue">0</b>
+      </div>
+      <p id="summaryText" class="summary-note"></p>
+    </div>
+
+    <h3>Dimensions</h3>
+    <p class="hint">
+      The class is the <strong>worst</strong> dimension, never the average — four hundred
+      photographs that are all out of focus produce an out-of-focus mesh. So there is always
+      exactly one thing worth fixing next.
+    </p>
+    <div id="dims" class="dims"></div>
+
+    <details>
+      <summary>What this demo is, and is not</summary>
+      <div class="pad">
+        <p>
+          <strong>It is:</strong> the real extractors from <code>lib/metrics.js</code> running
+          on real pixels, scored against the real <code>heritage-v1</code> rubric — the same
+          code the test suite exercises.
+        </p>
+        <p>
+          <strong>It is not:</strong> a capture client. No full-resolution capture, no
+          scale-bar detection, no reconstruction, no provenance binding. Pose comes from
+          device orientation where available and is simulated otherwise, so coverage on a
+          laptop is illustrative rather than real.
+        </p>
+        <p>
+          A record produced here would be <code>indicative</code> at best. Without a scale
+          reference an object has shape but no size, and an object with no size cannot be
+          measured or matched to an excavation record.
+        </p>
+      </div>
+    </details>
+
+    <p class="foot">
+      <a href="https://github.com/Ethical-Tech-CoLab/turnstone">Source</a> ·
+      <a href="https://github.com/Ethical-Tech-CoLab/turnstone/blob/main/PHOTOGRAMMETRY-SPEC.md">Specification</a> ·
+      <span id="buildTag" class="build">build dev</span>
+    </p>
+  </aside>
+</main>
+
+<div id="toast" class="toast hidden"></div>
+
+<script type="module" src="demo.js"></script>
+</body>
+</html>

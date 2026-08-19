@@ -1,0 +1,108 @@
+name: Deploy demo to GitHub Pages
+
+# The quality demo is a static, dependency-free page that runs the real metric
+# extractors on real pixels. Publishing it gives an HTTPS origin, which
+# getUserMedia and DeviceOrientation both require.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'web/**'
+      - 'lib/**'
+      - 'rubric/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      # Nothing ships without the extractors passing. The demo's whole claim is
+      # that its numbers come from tested code.
+      - name: Run tests
+        run: |
+          node --test \
+            test/conformance.test.mjs \
+            test/metrics.test.mjs \
+            test/guidance.test.mjs
+      - name: Validate rubric files
+        run: node tools/validate-rubrics.mjs
+
+      # A syntax check proves a file parses, not that the page works. This loads
+      # the demo in a real browser engine, runs a session, and asserts the
+      # numbers moved — it is what caught a deferred dimension capping the live
+      # class, which no unit test would have noticed.
+      - name: Check the demo in headless Chrome
+        run: node tools/demo-probe.mjs
+
+  build:
+    name: Build site
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Assemble site
+        run: |
+          mkdir -p _site
+          cp -r web/* _site/
+          # The demo imports the real modules rather than a copy, so they ship
+          # verbatim. A vendored duplicate would be free to drift from the code
+          # the tests actually run.
+          cp -r lib _site/lib
+          cp -r rubric _site/rubric
+          touch _site/.nojekyll
+
+      # Pages serves Cache-Control: max-age=600. With unversioned URLs, a device
+      # that opened the page in the last ten minutes keeps its stale copy — so a
+      # deploy that never arrived is indistinguishable from one that changed
+      # nothing. Plumb lost a round of field testing to exactly this.
+      - name: Stamp asset version for cache busting
+        run: |
+          V="${GITHUB_SHA::12}"
+          sed -i "s|href=\"css/demo.css\"|href=\"css/demo.css?v=$V\"|g" _site/index.html
+          sed -i "s|src=\"demo.js\"|src=\"demo.js?v=$V\"|g" _site/index.html
+          # ES module imports are separate requests and stay cached even behind
+          # a fresh demo.js, so they need stamping too.
+          for f in _site/demo.js _site/lib/*.js; do
+            sed -i -E "s|(from '\./[^']*\.js)'|\1?v=$V'|g" "$f"
+            sed -i -E "s|(from '\.\./[^']*\.js)'|\1?v=$V'|g" "$f"
+          done
+          sed -i "s|__TURNSTONE_BUILD__|$V|g" _site/demo.js
+
+          echo "--- verification ---"
+          grep -o 'demo.css?v=[0-9a-f]*' _site/index.html | head -1
+          grep -o "from '\./lib/metrics.js?v=[0-9a-f]*'" _site/demo.js | head -1
+          grep -o "from '\./metrics.js?v=[0-9a-f]*'" _site/lib/session.js | head -1
+          node --check _site/demo.js && echo "demo.js parses after rewrite"
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    name: Deploy
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
