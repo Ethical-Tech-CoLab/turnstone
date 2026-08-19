@@ -233,6 +233,12 @@ function render() {
   const st = ps.status();
   const cls = st.quality.class;
 
+  // Once there are frames, the empty state has served its purpose. Leaving it
+  // up puts body text directly behind the coverage dial, which makes both
+  // unreadable — and the dial is the primary instrument.
+  $('empty').classList.toggle('hidden', st.frames > 0 || !!camera.stream);
+  $('dial').classList.toggle('hidden', st.frames === 0);
+
   $('classBadge').textContent = cls;
   $('classBadge').className = `badge badge-${cls}`;
   $('clsValue').textContent = cls;

@@ -44,6 +44,53 @@
 }
 .steady-pill.is-steady { color: var(--ok); border-color: var(--ok); }
 
+/*
+ * The instruction must clear the sheet's peek. The sheet is positioned against
+ * the tray, so its top sits SHEET_PEEK above the stage bottom — the offset is
+ * that peek plus a margin, not something derived from the tray height.
+ *
+ * A half-visible instruction is worse than none: it reads as a broken layout
+ * rather than as guidance, and guidance nobody trusts is guidance nobody
+ * follows. Kept as a variable so the two cannot drift apart.
+ */
+:root { --sheet-peek: 132px; }
+
+@media (max-width: 900px), (max-height: 560px) {
+  /*
+   * Anchor to the sheet, not to the stage.
+   *
+   * The sheet's top edge sits SHEET_PEEK above the tray, and the stage bottom
+   * IS the tray top — so clearing the sheet means offsetting by the peek plus a
+   * margin. Deriving it from the tray height was wrong by exactly the peek,
+   * which put the pill 45px underneath the sheet: visible enough to look
+   * deliberate, clipped enough to be unreadable.
+   */
+  .instruction { bottom: calc(var(--sheet-peek) + 12px); }
+
+  /*
+   * Cap the instruction at three lines.
+   *
+   * The rubric's guidance strings are written to be complete rather than
+   * short — "Keep orbiting. Then raise the camera and orbit again from above,
+   * and once from below — one circle at eye level leaves the top and underside
+   * unrecorded." is 150 characters and wrapped to six lines on a phone, which
+   * is both a wall of text over the viewfinder and tall enough to collide with
+   * the sheet.
+   *
+   * Somebody walking backwards around a plinth reads the first line. The full
+   * text stays available in the sheet, under the dimension it belongs to.
+   */
+  .instruction {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    max-width: min(94%, 420px);
+    font-size: 12.5px;
+    line-height: 1.3;
+  }
+}
+
 .shutter { position: relative; display: grid; place-items: center; }
 .shutter.is-armed { background: var(--ok); }
 .shutter.is-busy { background: var(--accent); }
@@ -173,6 +220,6 @@
     padding: 12px 14px 20px;
   }
   /* Peek shows the summary; the grip is always reachable. */
-  .panel { transform: translateY(calc(100% - 132px)); }
+  .panel { transform: translateY(calc(100% - var(--sheet-peek))); }
   .panel.is-open { transform: translateY(0); }
 }
