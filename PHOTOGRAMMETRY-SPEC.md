@@ -576,37 +576,34 @@ A build is conformant when these pass. Each exists because getting it wrong is p
 
 | Phase | Contents | Status |
 |---|---|---|
-| **0 · Foundation** | Project folder; rubric as data + `heritage-v1`; scoring engine; overlap geometry; conformance tests C-1, C-2, C-3, C-8, C-9, C-11 | **done** — 18 tests passing |
+| **0 · Foundation** | Own repository; rubric as data + `heritage-v1`; scoring engine; overlap geometry; conformance tests C-1, C-2, C-3, C-8, C-9, C-11 | **done** — 18 tests passing |
 | **1 · Metrics** | §6 extractors against a fixture corpus of known-good and known-bad frames | next — closes the gap DPA names |
 | **2 · Capture client** | Coverage dial, guidance loop, auto-capture, session store, offline | |
 | **3 · Target** | Printable SVG target, marker detection, measured-length entry, masking | |
 | **4 · Server** | Docker, AliceVision backend, job model, outputs | |
 | **5 · Binding** | `ReconstructionBinding`, perceptual mesh hash, C-6 | |
 | **6 · Interop** | CRMdig + IIIF 3D export, DPA passport wiring | |
-| **7 · Relocate** | Push `turnstone/` to its own repository once the name is confirmed | gated on the name |
 
 ### Phase 0, as built
 
 ```
-turnstone/
-  README.md
-  PHOTOGRAMMETRY-CONCEPT.md   research, findings, decisions
-  PHOTOGRAMMETRY-SPEC.md      this document
-  rubric/heritage-v1.json     DPA's ten dimensions, transcribed mechanically
-  lib/rubric.js               loader + scoring (§4, §5)
-  lib/overlap.js              orbit geometry (§6.3)
-  test/conformance.test.mjs   18 tests
-  tools/validate-rubrics.mjs  CI guard for hand-edited rubrics
-  tools/tavily_research.py    the research harness
-  research/                   92 queries, raw + summarised
+README.md
+PHOTOGRAMMETRY-CONCEPT.md   research, findings, decisions
+PHOTOGRAMMETRY-SPEC.md      this document
+rubric/heritage-v1.json     DPA's ten dimensions, transcribed mechanically
+lib/rubric.js               loader + scoring (§4, §5)
+lib/overlap.js              orbit geometry (§6.3)
+test/conformance.test.mjs   18 tests
+tools/validate-rubrics.mjs  CI guard for hand-edited rubrics
+tools/tavily_research.py    the research harness
+research/                   92 queries, raw + summarised
 ```
 
-**On relocation.** The work is staged in the Plumb repository under `turnstone/` because that
-is where it was done. It is self-contained: nothing outside the folder references it, it has
-its own workflow (`.github/workflows/turnstone.yml`), and Plumb's deploy workflow is
-path-filtered to `prototype/**`, `HOW-TO-PLUMB.md` and `docs/assets/**`, so the two cannot
-interfere. Moving it is `git mv` into a fresh repository plus one workflow file — deliberately
-kept that cheap, because the name is not yet confirmed.
+**On the repository.** This work began inside the Plumb repository, because that is where it
+was done, and was relocated here once the name was confirmed. The four commits that produced
+it were carried over with their history rather than squashed into an import, so the reasoning
+— including the licence findings that changed two recommendations, and the fixture error that
+the implementation caught in this specification — remains readable in `git log`.
 
 **Two conformance tests were written after the fact and are worth noting**, because the
 implementation caught an error in the specification's own fixture rather than the other way

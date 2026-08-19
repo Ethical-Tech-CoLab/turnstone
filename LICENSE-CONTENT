@@ -1,0 +1,53 @@
+# Content Licence — CC BY 4.0
+
+Documentation, photographs and derived imagery in this repository are licensed under the
+**Creative Commons Attribution 4.0 International License (CC BY 4.0)**.
+
+Full legal text: <https://creativecommons.org/licenses/by/4.0/legalcode>
+Human-readable summary: <https://creativecommons.org/licenses/by/4.0/>
+
+## You are free to
+
+- **Share** — copy and redistribute the material in any medium or format
+- **Adapt** — remix, transform, and build upon the material for any purpose, **including commercially**
+
+## Under the following terms
+
+- **Attribution** — You must give appropriate credit, provide a link to the licence, and indicate if
+  changes were made. You may do so in any reasonable manner, but not in any way that suggests the
+  licensor endorses you or your use.
+- **No additional restrictions** — You may not apply legal terms or technological measures that
+  legally restrict others from doing anything the licence permits.
+
+## Attribution
+
+Unless a specific contributor is named in the item's provenance manifest, attribute as:
+
+> Plumb — Ethical Tech CoLab, CC BY 4.0
+
+Where a capture has a named contributor in its C2PA manifest or provenance sidecar, credit that
+contributor.
+
+## Note on scope
+
+This licence covers **documentation, photographs and derived imagery**.
+
+- **Code** is licensed separately under Apache-2.0 — see [LICENSE](LICENSE).
+- **Measurement data and metadata** are released under CC0 1.0 — see [LICENSE-DATA](LICENSE-DATA).
+
+## Why not share-alike
+
+This is a deliberate decision, not an oversight. Requiring share-alike would oblige preservation
+architects and engineers to release client deliverables that adapt this material — which would stop
+them using the corpus at all, defeating its purpose. Reasoning in full:
+[docs/06-trust-anchor-and-licensing.md](docs/06-trust-anchor-and-licensing.md) §3.
+
+**Consequence:** CC BY-SA material (e.g. from Wikimedia Commons or Mapillary) **cannot** be absorbed
+into this corpus. Such material must be kept in a separately-licensed, separately-tagged collection.
+
+## No warranty
+
+Measurements published here carry stated uncertainties and calibration tiers. They are **measured
+accuracy** only, per the USIBD Level of Accuracy specification; **represented accuracy** of any drawing
+or model derived from them is not implied and must be assessed separately. This material is provided
+without warranty and is not a substitute for a licensed survey.

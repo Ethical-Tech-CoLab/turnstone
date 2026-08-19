@@ -1,0 +1,50 @@
+# Data Licence — CC0 1.0 Universal (Public Domain Dedication)
+
+Measurement data, calibration records and metadata in this repository are released under
+**CC0 1.0 Universal**.
+
+Full legal text: <https://creativecommons.org/publicdomain/zero/1.0/legalcode>
+Human-readable summary: <https://creativecommons.org/publicdomain/zero/1.0/>
+
+To the extent possible under law, the contributors to Plumb have waived all copyright and related or
+neighbouring rights to the measurement data and metadata in this repository. You may copy, modify,
+distribute and use the data, including for commercial purposes, without asking permission.
+
+## What this covers
+
+- Measured values, uncertainties and calibration records
+- Homographies, residuals, GSD figures, check-distance results
+- Capture metadata: device, capture profile, sensor readings, timestamps, subject identifiers
+- Derived tabular data, measurement registers, and survey exports
+
+## What this does not cover
+
+- **Photographs and derived imagery** — CC BY 4.0, see [LICENSE-CONTENT](LICENSE-CONTENT)
+- **Code** — Apache-2.0, see [LICENSE](LICENSE)
+
+## Why CC0 for data
+
+Measurements of a building are **facts**. In the United States, facts are not subject to copyright
+(*Feist Publications v. Rural Telephone Service*), so a restrictive licence on measurement values would
+be of doubtful enforceability while still deterring cautious institutional adopters — the worst of both
+outcomes.
+
+CC0 states the intent plainly and removes ambiguity, including in jurisdictions with *sui generis*
+database rights (notably the EU) where the position would otherwise be unclear.
+
+## Attribution is requested, not required
+
+CC0 imposes no conditions. That said, scientific and professional norms still apply: if you use this
+data in research or a professional deliverable, please cite it, and **please carry the uncertainty and
+calibration tier with the value**. A measurement stripped of its error bar and its provenance is no
+longer evidence.
+
+Suggested citation:
+
+> Plumb measured-photography corpus, Ethical Tech CoLab. CC0 1.0.
+
+## No warranty
+
+Data is provided "as is", without warranty of any kind. Values represent **measured accuracy** per the
+USIBD Level of Accuracy specification; **represented accuracy** of derived drawings or models is not
+implied. This data is not a substitute for a licensed survey.

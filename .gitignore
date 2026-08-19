@@ -1,0 +1,58 @@
+# Node
+node_modules/
+npm-debug.log*
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editors
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Secrets — never commit API keys or signing material
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+secrets.json
+
+# Captures and reconstruction output.
+#
+# Source imagery is the archive and belongs in object storage with its manifest,
+# never in git: it is large, it is often sensitive, and for funerary or sacred
+# material a public repository is exactly the wrong default.
+captures/
+sessions/
+uploads/
+out/
+*.orig.jpg
+*.orig.jpeg
+*.orig.dng
+*.orig.tif
+
+# Reconstruction artefacts are derived and regenerable. The photographs are the
+# archive; a mesh can always be rebuilt, and a better pipeline will rebuild it
+# better.
+*.ply
+*.e57
+*.glb
+*.gltf
+*.obj
+*.mtl
+
+# Server scratch
+server/.venv/
+server/data/
+.pytest_cache/

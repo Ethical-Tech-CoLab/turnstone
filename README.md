@@ -27,7 +27,8 @@ is and what it may be relied upon for.
 | ⬜ Reconstruction server | Spec §8 |
 
 ```
-node --test turnstone/test/conformance.test.mjs     # 18 passing
+node --test test/conformance.test.mjs      # 18 passing
+node tools/validate-rubrics.mjs
 ```
 
 ---
@@ -66,5 +67,9 @@ another programme supplies its own, and neither forks this tool.
 
 ## Licences
 
-Code Apache-2.0 · docs CC BY 4.0 · rubrics and schemas CC0, so a rubric can be cited,
-forked and argued with freely.
+Code **Apache-2.0** · docs **CC BY 4.0** · rubrics and schemas **CC0**, so a rubric can be
+cited, forked and argued with freely.
+
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the rules that are not up for negotiation, and
+[`SECURITY.md`](SECURITY.md) for what counts as a security issue in a project that makes
+claims about objects.
