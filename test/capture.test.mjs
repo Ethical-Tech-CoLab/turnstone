@@ -108,6 +108,33 @@ test('the capture profile says whether the lens profile can be trusted', () => {
   assert.equal(c.captureProfile().lens_profile_valid, true);
 });
 
+test('captureProfile reports the PREVIEW size, so callers must override it', () => {
+  /*
+   * Found in a real session: the manifest recorded 1920x1440 while the
+   * photographs were 2560x1920. captureProfile() reads the video track's
+   * settings, which is the preview stream — takePhoto() returns a full-sensor
+   * still that is usually larger.
+   *
+   * The measurements were unaffected, because they are computed from the
+   * still. The metadata was wrong, and metadata is what a reconstruction
+   * pipeline reads. It also understated the capture, which is the more
+   * insidious direction: nobody investigates a record that looks worse than
+   * it is.
+   *
+   * This test pins the behaviour so the override in the capture client is not
+   * mistaken for redundancy and removed.
+   */
+  const c = new Camera();
+  c.settings = { width: 1920, height: 1440 };
+  const p = c.captureProfile();
+  assert.equal(p.width, 1920, 'profile reports the preview dimensions');
+
+  // What the client must do with it.
+  const corrected = { ...p, width: 2560, height: 2560 * 0.75, preview_width: p.width, preview_height: p.height };
+  assert.equal(corrected.width, 2560);
+  assert.equal(corrected.preview_width, 1920, 'the preview size is kept, not discarded');
+});
+
 test('platform detection does not throw outside a browser', () => {
   const p = detectPlatform();
   assert.ok(p.id);

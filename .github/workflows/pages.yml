@@ -34,6 +34,9 @@ jobs:
           node-version: '22'
       # Nothing ships without the extractors passing. The demo's whole claim is
       # that its numbers come from tested code.
+      - name: Check printable targets are dimensionally correct
+        run: node tools/check-targets.mjs
+
       - name: Run tests
         run: |
           node --test \
@@ -80,6 +83,11 @@ jobs:
           # the tests actually run.
           cp -r lib _site/lib
           cp -r rubric _site/rubric
+          # The printable mats. Verified dimensionally correct by the test job
+          # before they can ship — a mat whose bar is not the stated length
+          # makes every measurement from it wrong by that factor.
+          mkdir -p _site/assets
+          cp docs/assets/target-*.svg _site/assets/
           touch _site/.nojekyll
 
       # Pages serves Cache-Control: max-age=600. With unversioned URLs, a device
@@ -89,7 +97,7 @@ jobs:
       - name: Stamp asset version for cache busting
         run: |
           V="${GITHUB_SHA::12}"
-          for page in _site/index.html _site/capture.html; do
+          for page in _site/index.html _site/capture.html _site/targets.html; do
             sed -i "s|href=\"css/demo.css\"|href=\"css/demo.css?v=$V\"|g" "$page"
             sed -i "s|href=\"css/capture.css\"|href=\"css/capture.css?v=$V\"|g" "$page"
             sed -i "s|src=\"demo.js\"|src=\"demo.js?v=$V\"|g" "$page"

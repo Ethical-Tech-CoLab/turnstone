@@ -23,6 +23,7 @@ const SHELL = [
   './',
   './index.html',
   './capture.html',
+  './targets.html',
   './demo.js',
   './capture.js',
   './manifest.webmanifest',
@@ -39,6 +40,10 @@ const SHELL = [
   './lib/store.js',
   './lib/steady.js',
   './lib/synthetic.js',
+  './lib/target.js',
+  './lib/zip.js',
+  './assets/target-a4.svg',
+  './assets/target-letter.svg',
 ];
 
 self.addEventListener('install', (e) => {

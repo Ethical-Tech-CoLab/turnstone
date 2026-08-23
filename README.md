@@ -9,6 +9,7 @@
 | | |
 |---|---|
 | [**Capture**](https://ethical-tech-colab.github.io/turnstone/capture.html) | Record an object. Coverage dial, one instruction at a time, and a session that survives a reload. |
+| [**Print a mat**](https://ethical-tech-colab.github.io/turnstone/targets.html) | Scale bar and colour patches. Print at 100%, then **measure what came out**. |
 | [**Quality demo**](https://ethical-tech-colab.github.io/turnstone/) | Watch a session score itself, and see what each dimension actually measures. |
 
 *Every number is computed from actual pixels — nothing is simulated.*
@@ -43,16 +44,19 @@ is and what it may be relied upon for.
 | ✅ **Phase 2** · auto-capture | [`lib/steady.js`](lib/steady.js) — one-shot on stability, so the tap never blurs the shot |
 | ✅ **Phase 2** · offline client | [`web/capture.html`](web/capture.html) — installable, boots with no network |
 | ✅ **Phase 2** · session packages | [`lib/zip.js`](lib/zip.js) — photographs, manifest and checksums leave the device as a `.zip` |
-| ⬜ Phase 3 | Printable target: scale bar, colour patches, fiducials, masking |
+| ✅ **Phase 3** · printable mats | [`docs/assets/`](docs/assets) — scale bar, colour patches, fiducials; verified 180.00 mm |
+| ✅ **Phase 3** · scale reference | [`lib/target.js`](lib/target.js) — measured length → GSD, with a scaled-print warning |
 | ⬜ Phase 4 | Reconstruction server (Docker, AliceVision) |
 
 ```bash
-node --test test/*.test.mjs           # 118 passing
+node --test test/*.test.mjs           # 137 passing
 node tools/validate-rubrics.mjs       # rubric files load and score
+node tools/check-targets.mjs          # printable mats measure what they claim
 node tools/demo-probe.mjs             # drives the demo in headless Chrome
 node tools/capture-probe.mjs          # drives the capture client, incl. offline
 node tools/check-archive-interop.mjs  # archives open in Python's zipfile
 node tools/verify-package.mjs <zip>   # check a session package is complete
+node tools/analyse-session.mjs <dir> [manifest.json]   # what can be built from a real session
 ```
 
 ---
@@ -103,7 +107,7 @@ package should not be relied upon.
 | Scale / colour reference | Target detection | ✅ |
 | Device metadata | Fraction of frames retaining focal length, sensor, pose | ❌ deferred |
 
-### Six things that are easy to get wrong
+### Eight things that are easy to get wrong
 
 **Sharpness is content-dependent.** A carved, weathered surface outscores a smooth glazed one
 at identical focus. An absolute threshold alone marks every smooth object blurred; a relative
@@ -135,6 +139,17 @@ not accumulated and saved at the end, because "save at the end" makes the failur
 everything rather than losing the last frame. The measurements are written before the image:
 if storage runs out, the record of what was measured survives, and that is the part that
 cannot be recreated from the object afterwards.
+
+**Printers scale silently.** A card printed from a 150 mm design came out at 137.5 mm — a 92%
+reduction, invisible to the eye. Using the nominal length would have made every measurement
+from that session 8% wrong, and nothing downstream could have detected it. The tool asks for
+the **measured** length, uses it, and tells you when it disagrees with nominal.
+
+**Metadata can be wrong while the measurements are right.** A field session recorded
+1920 × 1440 in its manifest while the photographs were 2560 × 1920: `captureProfile()` reports
+the video *preview* stream, and `takePhoto()` returns a larger full-sensor still. The
+measurements were computed from the still and were correct; the metadata was not, and metadata
+is what a reconstruction pipeline reads.
 
 ---
 

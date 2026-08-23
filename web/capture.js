@@ -15,6 +15,7 @@ import { openStore, PersistentSession, requestPersistence, storageEstimate } fro
 import { PoseTracker, AutoCapture } from './lib/steady.js';
 import { AZIMUTH_BINS, gsdRequiredFor } from './lib/metrics.js';
 import { makeZip, checkZipLimits } from './lib/zip.js';
+import { KNOWN_TARGETS, checkPrintedLength, scaleReferenceValue, gsdFromSpan, spanFromFraction } from './lib/target.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -186,7 +187,18 @@ async function shoot({ auto: fromAuto = false } = {}) {
     if (!width || !height) throw new Error('Camera is not ready yet.');
 
     const p = lastPose ?? {};
-    const profile = camera.captureProfile();
+    /*
+     * Record the dimensions of the image that was actually captured.
+     *
+     * captureProfile() reports the VIDEO TRACK settings, which on a real device
+     * is the preview stream — 1920x1440 in one field test where takePhoto()
+     * had in fact returned a 2560x1920 full-sensor still. The measurements were
+     * right, because they were computed from the still; the metadata was wrong,
+     * and metadata is what a reconstruction pipeline reads. It also understated
+     * the capture, which is the more insidious direction: nobody investigates a
+     * record that looks worse than it is.
+     */
+    const profile = { ...camera.captureProfile(), width, height, preview_width: camera.settings?.width ?? null, preview_height: camera.settings?.height ?? null };
     const measurements = measureFrame(source, width, height, {
       azimuthDeg: p.azimuthDeg ?? null,
       elevationDeg: p.elevationDeg ?? 0,
@@ -375,9 +387,7 @@ function applySubjectToUi() {
   $('subjName').value = ps.meta.subject ?? '';
   $('subjId').value = ps.meta.identifier ?? '';
   $('subjectLabel').textContent = ps.meta.subject || 'capture';
-  $('hasScale').checked = ps.session.scaleReference > 0;
   $('hasColour').checked = ps.session.colourReference > 0;
-  $('scaleLenWrap').hidden = !$('hasScale').checked;
 }
 
 /**
@@ -658,31 +668,80 @@ $('sensitivity').addEventListener('change', async (e) => {
   }
 });
 
-$('hasScale').addEventListener('change', (e) => {
-  $('scaleLenWrap').hidden = !e.target.checked;
-  ps.session.scaleReference = e.target.checked ? 1 : 0;
-  updateGsd();
+/**
+ * Scale reference wiring.
+ *
+ * The MEASURED length is what enters the calculation, never the nominal one.
+ * A real card printed from a 150 mm design measured 137.5 mm — the printer had
+ * scaled the page to about 92%. Trusting nominal would have made every
+ * measurement from that session 8% wrong, with nothing downstream able to
+ * detect it.
+ */
+function updateScale() {
+  const kind = $('targetKind').value;
+  const spec = KNOWN_TARGETS[kind];
+  const has = kind !== 'none';
+  $('scaleBlock').hidden = !has;
+
+  if (!has) {
+    ps.session.scaleReference = 0;
+    ps.session.gsdMmPerPx = null;
+    $('printWarn').className = 'warn-box hidden';
+    return;
+  }
+
+  if (spec?.nominalMm && !$('scaleLen').dataset.touched) {
+    $('scaleLen').value = spec.nominalMm;
+  }
+  $('scaleHint').textContent = spec?.measureLabel
+    ? `Measure ${spec.measureLabel}, and enter what you actually measured — not the number printed on it.`
+    : '';
+
+  const measured = parseFloat($('scaleLen').value) || 0;
+  ps.session.scaleReference = scaleReferenceValue({ targetId: kind, measuredMm: measured });
+
+  // Flag a scaled print, but keep using the measured value: it is correct, and
+  // the operator should know their printer is misbehaving for next time.
+  const check = checkPrintedLength(kind, measured);
+  const warn = $('printWarn');
+  if (check.ok === false) {
+    warn.className = 'warn-box';
+    warn.textContent = check.note;
+  } else {
+    warn.className = 'warn-box hidden';
+  }
+
+  // GSD from the reference: measured length over pixels spanned. Needs no focal
+  // length, no sensor size and no distance.
+  const frac = parseInt($('scaleFrac').value, 10) / 100;
+  $('scaleFracVal').textContent = `${$('scaleFrac').value}%`;
+  const widthPx = ps.session.frames.at(-1)?.workingWidth
+    ? ps.session.frames.at(-1).workingWidth / (ps.session.frames.at(-1).workingScale || 1)
+    : 4000;
+  const span = spanFromFraction(widthPx, frac);
+  const gsd = gsdFromSpan(measured, span);
+  ps.session.gsdMmPerPx = gsd;
+
+  $('gsdHint').textContent = gsd
+    ? `Gives about ${gsd.toFixed(3)} mm per pixel. Reference class needs ≤ ${gsdRequiredFor(0.75).toFixed(2)}; study needs ≤ ${gsdRequiredFor(0.5).toFixed(2)}.`
+    : '';
+}
+
+$('targetKind').addEventListener('change', () => {
+  $('scaleLen').dataset.touched = '';
+  updateScale();
   render();
 });
-$('scaleLen').addEventListener('change', () => { updateGsd(); render(); });
+$('scaleLen').addEventListener('input', (e) => {
+  e.target.dataset.touched = '1';
+  updateScale();
+  render();
+});
+$('scaleFrac').addEventListener('input', () => { updateScale(); render(); });
 $('hasColour').addEventListener('change', (e) => {
   ps.session.colourReference = e.target.checked ? 1 : 0;
   render();
 });
-
-/**
- * GSD from the scale bar: known length over pixels spanned.
- *
- * Needs no focal length, no sensor size and no distance, which is why a bar in
- * shot is worth more than any amount of metadata. The span is estimated from
- * the frame here; Phase 3 detects the bar directly.
- */
-function updateGsd() {
-  if (!$('hasScale').checked) { ps.session.gsdMmPerPx = null; return; }
-  const mm = parseFloat($('scaleLen').value) || 150;
-  const assumedSpanPx = 900;
-  ps.session.gsdMmPerPx = mm / assumedSpanPx;
-}
 
 $('targetSeg').addEventListener('click', async (e) => {
   const btn = e.target.closest('.seg-btn');

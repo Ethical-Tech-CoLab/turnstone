@@ -228,14 +228,46 @@ try {
   // --- the scale bar is the highest-value thing in the frame ---------------
   const noScale = await cdp.eval(`document.getElementById('clsValue').textContent`);
   await cdp.eval(`(() => {
-    const c = document.getElementById('hasScale');
+    const k = document.getElementById('targetKind');
+    k.value = 'plumb-card'; k.dispatchEvent(new Event('change'));
+    const l = document.getElementById('scaleLen');
+    // The real measured value from a real card, not the nominal 150.
+    l.value = '137.5'; l.dispatchEvent(new Event('input'));
+    const c = document.getElementById('hasColour');
     c.checked = true; c.dispatchEvent(new Event('change'));
-    const k = document.getElementById('hasColour');
-    k.checked = true; k.dispatchEvent(new Event('change'));
   })()`);
-  await sleep(300);
-  const withScale = await cdp.eval(`document.getElementById('clsValue').textContent`);
-  expect('adding a scale bar lifts the class', withScale !== noScale, `${noScale} -> ${withScale}`);
+  await sleep(400);
+  const withScale = await cdp.eval(`(() => ({
+    cls: document.getElementById('clsValue').textContent,
+    limiting: document.getElementById('limitValue').textContent,
+    gsd: window.__turnstone.ps.session.gsdMmPerPx,
+    scaleRef: window.__turnstone.ps.session.scaleReference,
+    warned: !document.getElementById('printWarn').classList.contains('hidden'),
+    warnText: document.getElementById('printWarn').textContent,
+  }))()`);
+  expect('the measured length is accepted', withScale.scaleRef === 1);
+  expect('GSD is derived from it', withScale.gsd > 0, `${withScale.gsd?.toFixed(3)} mm/px`);
+  /*
+   * The class is NOT asserted to jump here.
+   *
+   * These probe frames are 256 px wide, so a 137.5 mm bar across 35% of the
+   * frame genuinely works out at ~1.5 mm/px — which is correctly rated
+   * insufficient. Demanding a class change would be demanding the scorer lie
+   * about a real limitation of synthetic input. What must be true is that the
+   * scale reference is satisfied and no longer the thing holding the capture
+   * back.
+   */
+  expect('scale reference is no longer the limiting dimension',
+    withScale.limiting !== 'scale-reference', withScale.limiting);
+
+  /*
+   * A card printed at 137.5 mm against a 150 mm design has been scaled by the
+   * printer. The measured value must still be used — it is the correct one —
+   * but the operator needs telling, or the next print will be wrong too.
+   */
+  expect('a scaled print is flagged', withScale.warned === true);
+  expect('and the warning explains how to fix it',
+    /Actual size|100%/i.test(withScale.warnText), withScale.warnText.slice(0, 70));
 
   // --- export ---------------------------------------------------------------
   const manifest = await cdp.eval(`(async () => {

@@ -109,13 +109,27 @@
       </p>
 
       <h3>2 · What is in shot</h3>
-      <label class="check">
-        <input id="hasScale" type="checkbox">
-        A calibrated scale bar is in frame
+      <label class="field">Scale reference
+        <select id="targetKind">
+          <option value="none" selected>None</option>
+          <option value="turnstone-mat-a4">Turnstone mat (A4)</option>
+          <option value="turnstone-mat-letter">Turnstone mat (US Letter)</option>
+          <option value="plumb-card">Plumb calibration card</option>
+          <option value="ruler">A ruler or steel rule</option>
+        </select>
       </label>
-      <label class="field" id="scaleLenWrap" hidden>Measured length of the bar
-        <input id="scaleLen" type="number" value="150" min="1" step="0.1"> mm
-      </label>
+      <div id="scaleBlock" hidden>
+        <label class="field" id="scaleLenLabel">Measured length
+          <input id="scaleLen" type="number" value="180" min="1" step="0.1"> mm
+        </label>
+        <p class="hint" id="scaleHint"></p>
+        <div id="printWarn" class="warn-box hidden"></div>
+        <label class="field">Roughly what fraction of the frame width does it span?
+          <input id="scaleFrac" type="range" min="5" max="90" value="35">
+          <span id="scaleFracVal">35%</span>
+        </label>
+        <p class="hint" id="gsdHint"></p>
+      </div>
       <label class="check">
         <input id="hasColour" type="checkbox">
         A colour reference target is in frame
@@ -124,6 +138,7 @@
         Without a scale reference the model has shape but no size — and an object with no size
         cannot be measured, compared against a written description, or matched to an
         excavation record. It is the single highest-value thing to put in the frame.
+        <a href="targets.html">Print a mat</a>.
       </p>
 
       <h3>3 · Camera</h3>

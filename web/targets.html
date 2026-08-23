@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Turnstone — printable capture mats</title>
+<link rel="stylesheet" href="css/demo.css">
+<link rel="stylesheet" href="css/capture.css">
+<style>
+  main { display: block; height: auto; padding: 20px; max-width: 780px; margin: 0 auto; }
+  .sheet { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 20px; margin-bottom: 16px; }
+  .preview { background: #fff; border: 1px solid var(--line); border-radius: 6px; padding: 8px; }
+  .preview img { display: block; width: 100%; }
+  h1 { font-size: 22px; margin: 0 0 6px; }
+  h2 { font-size: 15px; margin: 22px 0 8px; }
+  ol { padding-left: 20px; color: var(--muted); font-size: 13.5px; line-height: 1.7; }
+  ol strong { color: var(--text); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 640px) { .grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand"><strong>Turnstone</strong><span class="sub">printable capture mats</span></div>
+  <div class="topbar-right"><a href="capture.html" class="btn">Back to capture</a></div>
+</header>
+
+<main>
+  <div class="sheet">
+    <h1>Print a capture mat</h1>
+    <p class="hint">
+      A calibrated length in shot is the single highest-value thing you can add to a capture.
+      It satisfies <code>scale-reference</code> — the one dimension no amount of processing can
+      recover afterwards — and it gives ground sample distance directly, needing no focal
+      length, no sensor size and no distance measurement.
+    </p>
+
+    <div class="warn-box">
+      <strong>Print at 100% / "Actual size". Not "Fit to page".</strong><br>
+      Then measure the printed bar with a ruler and enter <em>what you measured</em> in the app.
+      Printers scale silently: a real card printed from a 150 mm design came out at 137.5 mm,
+      which would have made every measurement from that session 8% wrong — and nothing
+      downstream could have detected it.
+    </div>
+
+    <h2>Choose a size</h2>
+    <div class="grid">
+      <div>
+        <div class="preview"><img src="assets/target-a4.svg" alt="A4 capture mat"></div>
+        <p class="hint" style="margin-top:8px">
+          <a href="assets/target-a4.svg" download>Download A4</a> · 210 × 297 mm · bar 180 mm
+        </p>
+      </div>
+      <div>
+        <div class="preview"><img src="assets/target-letter.svg" alt="US Letter capture mat"></div>
+        <p class="hint" style="margin-top:8px">
+          <a href="assets/target-letter.svg" download>Download US Letter</a> · 8.5 × 11 in · bar 180 mm
+        </p>
+      </div>
+    </div>
+
+    <h2>How to use it</h2>
+    <ol>
+      <li><strong>Print at 100%</strong>, on matte paper if you have it. Gloss reflects the
+        light back at the camera and blows out the very patches you printed it for.</li>
+      <li><strong>Measure the black bar</strong>, end to end, with the best ruler you have.
+        Write the number in the box on the mat — you only do this once per printed card.</li>
+      <li><strong>Lay it flat</strong> and put the object in the dashed square. A creased mat is
+        no longer a straight line of known length.</li>
+      <li><strong>Enter the measured length</strong> in the app under
+        <em>What is in shot</em>. Not the nominal one.</li>
+      <li><strong>Keep the mat in frame</strong> as you orbit. The markers differ on each side
+        so some stay visible whatever angle you are at.</li>
+    </ol>
+
+    <h2>Already have a Plumb card?</h2>
+    <p class="hint">
+      Use it. Its calibrated width is a perfectly good scale reference here — select
+      <em>Plumb calibration card</em> and enter your measured width. It carries no colour
+      patches, so the colour dimension stays unmet and the class caps below
+      <code>reference</code>; everything else works.
+    </p>
+
+    <h2>No card at all?</h2>
+    <p class="hint">
+      A steel rule or any ruler works, and is what most conservation labs already have. Lay it
+      in the same plane as the widest part of the object, and enter the span you will point at.
+      What matters is that a known length is in the photograph, not that it came from us.
+    </p>
+  </div>
+
+  <p class="foot" style="text-align:center">
+    <a href="capture.html">Capture</a> ·
+    <a href="index.html">Quality demo</a> ·
+    <a href="https://github.com/Ethical-Tech-CoLab/turnstone">Source</a> ·
+    mats are CC0
+  </p>
+</main>
+
+</body>
+</html>
