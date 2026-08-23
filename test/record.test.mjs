@@ -64,6 +64,25 @@ test('the disclaimer text is free of mojibake', () => {
   assert.ok(disclaimers.attests.includes('\u2014'), 'the em-dash should survive as an em-dash');
 });
 
+test('the capture client asserts the same words as the record', () => {
+  // The client carries the text inline so an export can never depend on a fetch
+  // succeeding — a contributor in a basement with no signal must still get a
+  // complete manifest. That inline copy is a third place the wording lives, and
+  // this is what stops it drifting from record/disclaimers-v1.json.
+  //
+  // The failure it guards against is silent: two records would assert
+  // different things and neither would show which wording was used.
+  const client = readFileSync(new URL('../web/capture.js', import.meta.url), 'utf8');
+
+  for (const key of ['attests', 'doesNotAttest']) {
+    assert.ok(
+      client.includes(disclaimers[key]),
+      `web/capture.js does not carry the exact ${key} text from record/disclaimers-v1.json. ` +
+        `A paraphrased legal statement is a different statement.`,
+    );
+  }
+});
+
 test('C-5 · funerary and sacred default to source-community', () => {
   assert.equal(defaultTier(disclaimers, 'funerary'), 'source-community');
   assert.equal(defaultTier(disclaimers, 'sacred'), 'source-community');
