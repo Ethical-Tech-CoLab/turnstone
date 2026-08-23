@@ -116,6 +116,26 @@ const expect = (name, ok, detail = '') => {
 };
 
 /**
+ * Wait for the client to finish booting, rather than sleeping a fixed time.
+ *
+ * A fixed wait tuned on localhost fails against the deployed site, where the
+ * rubric arrives over the network — and it fails as "nothing rendered", which
+ * looks exactly like a broken build. Polling for the readiness the app itself
+ * exposes removes the guess.
+ */
+async function waitForReady(cdp, timeoutMs = 25000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const ready = await cdp.eval(
+      `!!(window.__turnstone && document.querySelectorAll('.dim').length === 10)`,
+    ).catch(() => false);
+    if (ready) return true;
+    await sleep(250);
+  }
+  throw new Error(`client did not finish booting within ${timeoutMs} ms`);
+}
+
+/**
  * Feed synthetic frames straight into the live session.
  *
  * There is no camera in headless Chrome, so this drives the same code path the
@@ -144,7 +164,7 @@ try {
   await cdp.send('Runtime.enable');
   await cdp.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
   await cdp.send('Page.navigate', { url: URL_ });
-  await sleep(1800);
+  await waitForReady(cdp);
 
   const booted = await cdp.eval(`(() => ({
     dims: document.querySelectorAll('.dim').length,
@@ -165,7 +185,7 @@ try {
   const beforeClass = await cdp.eval(`document.getElementById('clsValue').textContent`);
 
   await cdp.send('Page.reload');
-  await sleep(2200);
+  await waitForReady(cdp);
 
   const after = await cdp.eval(`(() => ({
     id: window.__turnstone.ps.meta.id,
@@ -341,7 +361,7 @@ try {
    * session with no camera involved.
    */
   await cdp.send('Page.reload');
-  await sleep(2400);
+  await waitForReady(cdp);
   const recovered = await cdp.eval(`(async () => {
     const ps = window.__turnstone.ps;
     const frames = await ps.frames();
@@ -402,7 +422,7 @@ try {
     offline: true, latency: 0, downloadThroughput: 0, uploadThroughput: 0,
   });
   await cdp.send('Page.reload');
-  await sleep(2600);
+  await waitForReady(cdp).catch(() => {});
 
   const offline = await cdp.eval(`(() => ({
     booted: !!window.__turnstone,
