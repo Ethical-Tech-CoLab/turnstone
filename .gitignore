@@ -57,3 +57,6 @@ server/.venv/
 server/data/
 server/.testdata/
 .pytest_cache/
+
+# Scratch file for multi-paragraph commit messages (git commit -F)
+.commitmsg
