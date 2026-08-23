@@ -249,6 +249,89 @@ try {
   expect('export states what it does NOT attest', manifest.hasDoesNot === true);
   expect('export marks the class provisional', manifest.provisional === true);
 
+  /*
+   * The photographs must actually leave the device.
+   *
+   * The first version of the export wrote only the manifest, with hasImage:true
+   * per frame — a record of images that were not in it. A real field test found
+   * nine full-resolution JPEGs stranded in browser storage with no way to get
+   * them out. Browser storage is not an archive: it is evicted under pressure
+   * and wiped by "clear browsing data".
+   *
+   * So this builds a package from frames that carry real image blobs, and
+   * checks the archive contains the bytes rather than a promise of them.
+   */
+  const pkg = await cdp.eval(`(async () => {
+    const { makeZip } = await import('./lib/zip.js');
+    const ps = window.__turnstone.ps;
+
+    // Give three frames real image data, as a camera capture would.
+    const frames = await ps.frames();
+    const store = window.__turnstone.store;
+    for (let i = 0; i < 3; i++) {
+      const bytes = new Uint8Array(50000);
+      bytes[0] = 0xFF; bytes[1] = 0xD8; bytes[2] = 0xFF; bytes[3] = 0xE0;
+      for (let j = 4; j < bytes.length; j++) bytes[j] = (i * 17 + j) & 0xFF;
+      await store.putFrame({ ...frames[i], blob: new Blob([bytes], { type: 'image/jpeg' }) });
+    }
+
+    const withImages = (await ps.frames()).filter(f => f.blob);
+    const zip = await makeZip([
+      { name: 'manifest.json', text: '{"format":"turnstone-session/1"}' },
+      ...withImages.map((f, i) => ({
+        name: 'images/frame-' + String(i).padStart(4, '0') + '.jpg', blob: f.blob,
+      })),
+    ]);
+    const buf = new Uint8Array(await zip.arrayBuffer());
+    return {
+      imagesStored: withImages.length,
+      zipBytes: zip.size,
+      isZip: buf[0] === 0x50 && buf[1] === 0x4B,
+      // The payload has to be in there, not merely referenced.
+      carriesPayload: zip.size > withImages.length * 40000,
+    };
+  })()`);
+  expect('images are retrievable from storage', pkg.imagesStored === 3, `${pkg.imagesStored}`);
+  expect('the package is a real ZIP', pkg.isZip === true);
+  expect('the package carries the image bytes, not just a reference',
+    pkg.carriesPayload === true, `${(pkg.zipBytes / 1e3).toFixed(0)} KB`);
+
+  /*
+   * THE RECOVERY PATH.
+   *
+   * A field test captured nine full-resolution photographs that could not be
+   * exported, because the export wrote only the manifest. Fixing the export is
+   * not enough — those photographs are still in browser storage and must come
+   * out without re-shooting the object, which for a museum piece may not be
+   * possible at all.
+   *
+   * So: reload (which resumes the stored session), and export from the resumed
+   * session with no camera involved.
+   */
+  await cdp.send('Page.reload');
+  await sleep(2400);
+  const recovered = await cdp.eval(`(async () => {
+    const ps = window.__turnstone.ps;
+    const frames = await ps.frames();
+    const withImages = frames.filter(f => f.blob);
+    const m = await window.__turnstone.buildManifest(frames);
+    return {
+      resumedFrames: frames.length,
+      imagesRecovered: withImages.length,
+      manifestNamesFiles: m.frames.filter(f => f.file).length,
+      exportEnabled: !document.getElementById('btnExport').disabled,
+      firstBytes: withImages.length ? withImages[0].blob.size : 0,
+    };
+  })()`);
+  expect('a reopened session still holds its photographs',
+    recovered.imagesRecovered === 3, `${recovered.imagesRecovered} of 3`);
+  expect('recovered photographs are exportable without re-shooting',
+    recovered.exportEnabled === true);
+  expect('the manifest names each image file',
+    recovered.manifestNamesFiles === recovered.imagesRecovered,
+    `${recovered.manifestNamesFiles} named`);
+  expect('recovered image data is intact', recovered.firstBytes === 50000, `${recovered.firstBytes} bytes`);
+
   // Funerary material must default closed.
   const tier = await cdp.eval(`(async () => {
     const s = document.getElementById('sensitivity');

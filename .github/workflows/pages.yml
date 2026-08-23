@@ -40,7 +40,14 @@ jobs:
             test/conformance.test.mjs \
             test/metrics.test.mjs \
             test/guidance.test.mjs \
-            test/capture.test.mjs
+            test/capture.test.mjs \
+            test/zip.test.mjs
+
+      # The archive has to open in tools nobody here controls. Verifying our own
+      # ZIP with our own reader would prove very little, so this round-trips a
+      # real archive through Python's zipfile — an independent implementation.
+      - name: Check archives open in an independent implementation
+        run: node tools/check-archive-interop.mjs
       - name: Validate rubric files
         run: node tools/validate-rubrics.mjs
 

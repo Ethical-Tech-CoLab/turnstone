@@ -26,7 +26,10 @@ jobs:
           node-version: '22'
 
       - name: Run conformance tests
-        run: node --test test/conformance.test.mjs test/metrics.test.mjs test/guidance.test.mjs test/capture.test.mjs
+        run: node --test test/conformance.test.mjs test/metrics.test.mjs test/guidance.test.mjs test/capture.test.mjs test/zip.test.mjs
+
+      - name: Check archives open in an independent implementation
+        run: node tools/check-archive-interop.mjs
 
       # The rubric is data and is meant to be edited by people who are not
       # editing code — a curator arguing with a threshold should not need a

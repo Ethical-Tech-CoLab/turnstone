@@ -154,6 +154,28 @@
 .btn-ghost { background: transparent; }
 .btn.is-on { border-color: var(--ok); color: var(--ok); }
 
+/* The export is the one action that gets work off the device, so it reads as
+   the primary action rather than as one option among three. */
+.btn-primary {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(0, 229, 255, .1);
+}
+
+/* Used where the consequence of ignoring it is losing work that may not be
+   recapturable. Deliberately hard to skim past. */
+.warn-box {
+  padding: 10px 12px;
+  margin: 0 0 10px;
+  border: 1px solid var(--warn);
+  border-left-width: 3px;
+  border-radius: 7px;
+  background: rgba(210, 153, 34, .1);
+  color: var(--text);
+  font: 12.5px/1.55 -apple-system, system-ui, sans-serif;
+}
+.warn-box.hidden { display: none; }
+
 .seg { display: flex; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
 .seg-btn {
   flex: 1;

@@ -14,6 +14,7 @@ import { Camera, detectPlatform } from './lib/camera.js';
 import { openStore, PersistentSession, requestPersistence, storageEstimate } from './lib/store.js';
 import { PoseTracker, AutoCapture } from './lib/steady.js';
 import { AZIMUTH_BINS, gsdRequiredFor } from './lib/metrics.js';
+import { makeZip, checkZipLimits } from './lib/zip.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -74,6 +75,8 @@ async function boot() {
     get store() { return store; },
     render,
     buildManifest,
+    exportSession,
+    exportManifestOnly,
   };
 }
 
@@ -126,7 +129,6 @@ async function startCamera() {
     $('btnFlip').disabled = false;
     $('btnLock').disabled = !(camera.capabilities.focusMode || camera.capabilities.exposureMode);
     $('btnCamera').classList.add('is-on');
-    $('btnExport').disabled = false;
     updateCamState();
     toast(camera.imageCapture
       ? 'Camera running. Full-resolution stills available.'
@@ -259,6 +261,13 @@ function render() {
 
   renderDims(st);
   drawDial(st);
+  updateStorageWarning(st);
+
+  // Export is driven by whether there is anything to export, not by whether
+  // the camera happens to be running. A resumed session must be exportable the
+  // moment it opens — that is the recovery path for work already captured.
+  $('btnExport').disabled = st.frames === 0;
+  $('btnExportJson').disabled = st.frames === 0;
 }
 
 function renderDims(st) {
@@ -378,8 +387,8 @@ function applySubjectToUi() {
  * a manifest that silently loses its disclaimer or its frames would otherwise
  * only be noticed by someone opening the file.
  */
-async function buildManifest() {
-  const frames = await ps.frames();
+async function buildManifest(frames = null) {
+  const list = frames ?? await ps.frames();
   const st = ps.status();
   const sensitivity = ps.meta.sensitivity ?? 'ordinary';
   return {
@@ -412,11 +421,15 @@ async function buildManifest() {
     surfaceCompleteness: st.surfaceCompleteness,
     attests: 'An object with these measurable characteristics was observed in this condition, at this place, at this time, by this party — and this is a tamper-evident record of that observation.',
     doesNotAttest: 'This record does not attest that the object was lawfully excavated, exported, acquired, or is lawfully held. It records an observation of an object, not a right to it. Capture quality and provenance legitimacy are unrelated: a high-quality capture of an unlawfully held object is a high-quality capture of an unlawfully held object.',
-    frames: frames.map((f) => ({
+    frames: list.map((f) => ({
       id: f.id,
       index: f.index,
       pass: f.pass,
       capturedAt: f.capturedAt,
+      // The filename inside the package. Named, not positional, so a manifest
+      // and a folder of images can always be re-associated.
+      file: f.blob ? imageName(f) : null,
+      bytes: f.blob ? f.blob.size : null,
       fullResolution: !!f.fullResolution,
       headingSource: f.headingSource ?? 'none',
       steadyAtCapture: !!f.steadyAtCapture,
@@ -434,24 +447,157 @@ async function buildManifest() {
   };
 }
 
+function imageName(f) {
+  const ext = (f.blob?.type ?? '').includes('png') ? 'png' : 'jpg';
+  return `images/frame-${String(f.index).padStart(4, '0')}.${ext}`;
+}
+
 /**
- * Export the session.
+ * Export the session as a package: the photographs, the manifest, checksums,
+ * and a README.
  *
- * Images stay on the device. A JSON file with megabytes of base64 in it is not
- * something a museum can hand to anyone, and the images are the archive — they
- * travel by a route that can carry them.
+ * THE PHOTOGRAPHS ARE THE ARCHIVE. An export that emits only the manifest
+ * leaves them in browser storage — which is evicted under pressure, wiped by
+ * "clear browsing data", and stored at a path no contributor could find. The
+ * first version of this function did exactly that, and a real field test found
+ * nine full-resolution JPEGs stranded on the device with no way to retrieve
+ * them.
+ *
+ * Checksums travel with the package so completeness can be checked later
+ * without trusting the file count.
  */
 async function exportSession() {
+  const frames = await ps.frames();
+  if (!frames.length) return toast('Nothing to export yet.');
+
+  const withImages = frames.filter((f) => f.blob);
+  const totalBytes = withImages.reduce((n, f) => n + f.blob.size, 0);
+
+  const limits = checkZipLimits(withImages.length + 3, totalBytes);
+  if (!limits.ok) return toast(limits.reason, 10000);
+
+  $('btnExport').disabled = true;
+  const previous = $('btnExport').textContent;
+  $('btnExport').textContent = 'Packaging…';
+
+  try {
+    const manifest = await buildManifest(frames);
+
+    // Checksums first: computing them is also the proof that every blob is
+    // readable, so a corrupt frame is found here rather than by whoever opens
+    // the archive next year.
+    const sums = [];
+    for (const f of withImages) {
+      const digest = await sha256Blob(f.blob);
+      sums.push(`${digest}  ${imageName(f)}`);
+      $('btnExport').textContent = `Packaging… ${sums.length}/${withImages.length}`;
+    }
+
+    const entries = [
+      { name: 'manifest.json', text: JSON.stringify(manifest, null, 2) },
+      { name: 'README.txt', text: readmeFor(manifest, withImages.length, totalBytes) },
+      { name: 'SHA256SUMS.txt', text: sums.join('\n') + '\n' },
+      ...withImages.map((f) => ({
+        name: imageName(f),
+        blob: f.blob,
+        date: new Date(f.capturedAt),
+      })),
+    ];
+
+    const zip = await makeZip(entries);
+    const name = `${ps.meta.subject ? slug(ps.meta.subject) + '_' : ''}${ps.meta.id}.zip`;
+    downloadBlob(zip, name);
+
+    // Record that the work has left the device, so the nag can stop.
+    ps.meta.exportedAt = ps.meta.updatedAt;
+    await store.putSession(ps.meta);
+    render();
+
+    const missing = frames.length - withImages.length;
+    toast(missing
+      ? `Exported ${withImages.length} photographs (${fmtMb(zip.size)}). ${missing} frame${missing > 1 ? 's have' : ' has'} no image — see README.txt.`
+      : `Exported all ${withImages.length} photographs, ${fmtMb(zip.size)}. Check it opens before you leave the site.`, 12000);
+  } catch (err) {
+    toast(`Export failed: ${err.message}. Your session is still on this device — try again.`, 12000);
+  } finally {
+    $('btnExport').disabled = false;
+    $('btnExport').textContent = previous;
+  }
+}
+
+/** Manifest only. Small, quick, and useless as an archive — labelled as such. */
+async function exportManifestOnly() {
   const manifest = await buildManifest();
-  const blob = new Blob([JSON.stringify(manifest, null, 2)], { type: 'application/json' });
+  downloadBlob(new Blob([JSON.stringify(manifest, null, 2)], { type: 'application/json' }),
+    `${ps.meta.id}.json`);
+  toast('Exported the manifest only. This does NOT contain the photographs — use “Export session” for those.', 9000);
+}
+
+async function sha256Blob(blob) {
+  const digest = await crypto.subtle.digest('SHA-256', await blob.arrayBuffer());
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+function downloadBlob(blob, name) {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `${ps.meta.id}.json`;
+  a.download = name;
   a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  setTimeout(() => URL.revokeObjectURL(a.href), 30000);
+}
 
-  const withImages = manifest.frames.filter((f) => f.hasImage).length;
-  toast(`Exported ${manifest.frames.length} frames (${withImages} with images kept on device).`, 6000);
+const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
+const fmtMb = (n) => `${(n / 1e6).toFixed(1)} MB`;
+
+function readmeFor(manifest, imageCount, totalBytes) {
+  return `TURNSTONE SESSION PACKAGE
+${'='.repeat(60)}
+
+Subject      ${manifest.session.subject || '(untitled)'}
+Session      ${manifest.session.id}
+Captured     ${manifest.session.startedAt}
+Exported     ${manifest.exportedAt}
+Build        ${manifest.build}
+
+WHAT IS IN HERE
+  manifest.json     every measurement, the quality assessment, and what this
+                    record does and does not attest
+  images/           ${imageCount} photographs, ${fmtMb(totalBytes)}, exactly as the camera
+                    produced them — not re-encoded, not resized
+  SHA256SUMS.txt    checksum per photograph
+
+VERIFY IT
+  Linux/macOS:  sha256sum -c SHA256SUMS.txt
+  Windows:      Get-FileHash images\\* -Algorithm SHA256
+
+THE PHOTOGRAPHS ARE THE ARCHIVE
+  The 3D model is a derived artefact. It can be rebuilt from these images with
+  better software in ten years; the images cannot be recreated from the model,
+  and for many objects they cannot be recaptured at all. Keep this package.
+
+QUALITY
+  Class        ${manifest.quality.class}${manifest.quality.provisional ? '  (PROVISIONAL)' : ''}
+  Score        ${manifest.quality.score}/100
+  Limiting     ${manifest.quality.limitingDimension ?? 'none'}
+${manifest.quality.provisional ? `
+  This class is provisional. These dimensions cannot be judged until the
+  photographs are processed: ${manifest.quality.deferred.join(', ')}.
+  The final class may be lower.
+` : ''}
+WHAT THIS RECORD ATTESTS
+  ${manifest.attests}
+
+WHAT IT DOES NOT ATTEST
+  ${manifest.doesNotAttest}
+
+DISCLOSURE
+  Tier         ${manifest.session.disclosureTier}
+  Sensitivity  ${manifest.session.sensitivity}
+${manifest.session.disclosureTier === 'source-community' ? `
+  This material is marked funerary or sacred and defaults to source-community
+  disclosure. A 3D model is a replication asset, and for such material public
+  visibility may itself be the harm. Do not publish without consent.
+` : ''}`;
 }
 
 /* ------------------------------------------------------------------- wire */
@@ -557,6 +703,33 @@ function setTargetSeg(t) {
 }
 
 $('btnExport').addEventListener('click', exportSession);
+$('btnExportJson').addEventListener('click', exportManifestOnly);
+
+/**
+ * Nag about unexported work.
+ *
+ * Browser storage is not an archive: it is evicted under pressure and wiped by
+ * "clear browsing data". A contributor who believes their photographs are safe
+ * because the app still shows them has a false sense of security, and the cost
+ * of being wrong is an object that may not be photographable again.
+ */
+function updateStorageWarning(st) {
+  const box = $('storageWarn');
+  const unexported = st.frames > 0 && ps.meta.exportedAt !== ps.meta.updatedAt;
+  const memoryOnly = !store.persistent;
+
+  if (memoryOnly && st.frames > 0) {
+    box.className = 'warn-box';
+    box.innerHTML = '<strong>This browser is not storing anything durably.</strong> '
+      + 'These frames will be lost on reload. Export now, and prefer a normal (not private) window.';
+  } else if (unexported && st.frames >= 8) {
+    box.className = 'warn-box';
+    box.innerHTML = `<strong>${st.frames} photographs are only on this device.</strong> `
+      + 'Export the session before you leave — browser storage is not an archive.';
+  } else {
+    box.className = 'warn-box hidden';
+  }
+}
 
 $('btnNew').addEventListener('click', async () => {
   ps = await PersistentSession.create(store, new Session(rubric, { target }), { target });

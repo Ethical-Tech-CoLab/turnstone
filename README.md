@@ -42,15 +42,50 @@ is and what it may be relied upon for.
 | ✅ **Phase 2** · persistent sessions | [`lib/store.js`](lib/store.js) — IndexedDB; frames survive reload, phone call, flat battery |
 | ✅ **Phase 2** · auto-capture | [`lib/steady.js`](lib/steady.js) — one-shot on stability, so the tap never blurs the shot |
 | ✅ **Phase 2** · offline client | [`web/capture.html`](web/capture.html) — installable, boots with no network |
+| ✅ **Phase 2** · session packages | [`lib/zip.js`](lib/zip.js) — photographs, manifest and checksums leave the device as a `.zip` |
 | ⬜ Phase 3 | Printable target: scale bar, colour patches, fiducials, masking |
 | ⬜ Phase 4 | Reconstruction server (Docker, AliceVision) |
 
 ```bash
-node --test test/*.test.mjs           # 108 passing
+node --test test/*.test.mjs           # 118 passing
 node tools/validate-rubrics.mjs       # rubric files load and score
 node tools/demo-probe.mjs             # drives the demo in headless Chrome
 node tools/capture-probe.mjs          # drives the capture client, incl. offline
+node tools/check-archive-interop.mjs  # archives open in Python's zipfile
+node tools/verify-package.mjs <zip>   # check a session package is complete
 ```
+
+---
+
+## Getting your photographs out
+
+**The photographs are the archive.** The 3D model is derived from them and can be rebuilt
+later with better software; the photographs cannot be recreated from the model, and for many
+objects they cannot be recaptured at all.
+
+**Export session** produces a `.zip` containing:
+
+```
+manifest.json      every measurement, the quality assessment, and what the
+                   record does and does not attest
+images/            the photographs, byte-identical to what the camera produced
+SHA256SUMS.txt     a checksum per photograph
+README.txt         what this package is, in plain language
+```
+
+Verify it before leaving the site:
+
+```bash
+node tools/verify-package.mjs bura-askos_s_xxxx.zip
+```
+
+The verifier reconciles the manifest against the actual files, recomputes every checksum, and
+checks that funerary or sacred material has not been marked public. It exits non-zero if the
+package should not be relied upon.
+
+> **Browser storage is not an archive.** Until you export, the photographs live in IndexedDB,
+> which is evicted under storage pressure and wiped by "clear browsing data". The client warns
+> once a session has frames that have not been exported.
 
 ---
 

@@ -150,10 +150,19 @@
       <div id="dims" class="dims"></div>
 
       <h3>5 · Session</h3>
+      <div id="storageWarn" class="warn-box hidden"></div>
       <div class="btn-row">
-        <button id="btnExport" class="btn" disabled>Export session</button>
+        <button id="btnExport" class="btn btn-primary" disabled>Export session</button>
+        <button id="btnExportJson" class="btn btn-ghost" disabled>Manifest only</button>
         <button id="btnNew" class="btn btn-ghost">New session</button>
       </div>
+      <p class="hint">
+        <strong>Export session</strong> gives you a <code>.zip</code> containing the
+        photographs, the measurements and a checksum for each image. The photographs are the
+        archive — the 3D model is derived from them and can be rebuilt later with better
+        software, but the photographs cannot be recreated from the model.
+        <strong>Do this before you leave the site</strong>, and open the file to check it.
+      </p>
       <div id="sessionList" class="session-list"></div>
 
       <p class="foot">
