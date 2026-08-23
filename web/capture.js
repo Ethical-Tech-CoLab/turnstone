@@ -49,14 +49,35 @@ async function boot() {
 
   // Reopen the most recent session rather than silently starting a new one.
   // A contributor who reloads mid-session has not asked to start again.
+  /*
+   * Reopen the most recent session THAT HAS FRAMES.
+   *
+   * The first version asked whether the most recent session had frames, which
+   * is a different question. Every time the client is opened and not used it
+   * creates an empty session with a fresh timestamp; on the next open that
+   * empty session is the most recent one, the check fails, and yet another
+   * empty session is created — while the session holding actual work is never
+   * resumed. A contributor whose photographs are still on the device would be
+   * shown an empty screen.
+   */
   const sessions = (await store.listSessions()).sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1));
-  if (sessions.length && sessions[0].frameCount > 0) {
-    ps = await PersistentSession.resume(store, new Session(rubric), sessions[0].id);
+  const withFrames = sessions.filter((s) => (s.frameCount ?? 0) > 0);
+
+  if (withFrames.length) {
+    ps = await PersistentSession.resume(store, new Session(rubric), withFrames[0].id);
     target = ps.meta.target ?? 'study';
     applySubjectToUi();
-    toast(`Resumed a session with ${ps.session.frames.length} frames.`, 5000);
+    toast(`Resumed “${ps.meta.subject || 'untitled'}” — ${ps.session.frames.length} photographs still on this device.`, 6000);
   } else {
     ps = await PersistentSession.create(store, new Session(rubric, { target }), { target });
+  }
+
+  // Discard the empty sessions left behind by opens that captured nothing.
+  // They carry no work, and left alone they accumulate forever.
+  for (const s of sessions) {
+    if ((s.frameCount ?? 0) === 0 && s.id !== ps.meta.id) {
+      await store.deleteSession(s.id).catch(() => {});
+    }
   }
 
   auto = new AutoCapture({ onFire: () => shoot({ auto: true }) });

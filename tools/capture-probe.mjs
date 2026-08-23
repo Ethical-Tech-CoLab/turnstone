@@ -384,6 +384,39 @@ try {
     `${recovered.manifestNamesFiles} named`);
   expect('recovered image data is intact', recovered.firstBytes === 50000, `${recovered.firstBytes} bytes`);
 
+  /*
+   * A session with work must survive opens that capture nothing.
+   *
+   * The first version asked whether the MOST RECENT session had frames, which
+   * is a different question. Every unused open creates an empty session with a
+   * fresh timestamp, so after one idle visit the empty session was the most
+   * recent, the check failed, and another empty session was created — while the
+   * session holding the photographs was never resumed. A contributor whose work
+   * was still on the device would be shown a blank screen.
+   */
+  const beforeIdle = await cdp.eval(`window.__turnstone.ps.meta.id`);
+  await cdp.send('Page.reload');
+  await waitForReady(cdp);
+  await cdp.send('Page.reload');
+  await waitForReady(cdp);
+  const afterIdle = await cdp.eval(`(() => ({
+    id: window.__turnstone.ps.meta.id,
+    frames: window.__turnstone.ps.session.frames.length,
+    exportEnabled: !document.getElementById('btnExport').disabled,
+    sessionCount: 0,
+  }))()`);
+  expect('work is still resumed after further idle opens',
+    afterIdle.id === beforeIdle, `${beforeIdle} -> ${afterIdle.id}`);
+  expect('and its frames are still there', afterIdle.frames === 48, `${afterIdle.frames}`);
+  expect('and it is still exportable', afterIdle.exportEnabled === true);
+
+  const empties = await cdp.eval(`(async () => {
+    const all = await window.__turnstone.store.listSessions();
+    return { total: all.length, empty: all.filter(s => (s.frameCount ?? 0) === 0).length };
+  })()`);
+  expect('empty sessions do not accumulate', empties.empty === 0,
+    `${empties.empty} empty of ${empties.total}`);
+
   // Funerary material must default closed.
   const tier = await cdp.eval(`(async () => {
     const s = document.getElementById('sensitivity');
