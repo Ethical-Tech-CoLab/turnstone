@@ -62,7 +62,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r server/requirements.txt pytest pyyaml
+          pip install -r server/requirements.txt pytest pyyaml pygltflib
 
       # No reconstruction backend is installed on the runner, and that is the
       # point: the simulated backend is a first-class backend so ingest,

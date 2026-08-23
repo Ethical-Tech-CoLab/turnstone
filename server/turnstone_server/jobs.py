@@ -34,6 +34,7 @@ from pathlib import Path
 
 from .backends import LicenceRefused, get_backend
 from .config import Config
+from .outputs import build_sidecar, derive_outputs
 from .package import SessionPackage, extract_package, open_package, sha256_file
 from .quality import finalise, load_rubric
 
@@ -268,6 +269,22 @@ class JobStore:
             outputs = self._store_outputs(job, result)
             capture_class = (pkg.manifest.get("quality") or {}).get("class")
 
+            # Stamped BEFORE the sidecar is built. The record embeds this, and a
+            # record that says the reconstruction never finished is wrong about
+            # the one thing it exists to attest to.
+            job.finished_at = _now()
+
+            sidecar = build_sidecar(
+                job=job, package=pkg, assessment=assessment.to_dict(),
+                deferred=deferred_values, backend=result.backend,
+                backend_version=result.version, outputs=outputs, rubric=rubric,
+            )
+            sidecar_path = self.job_dir(job.id) / "outputs" / "record.json"
+            sidecar_path.write_text(json.dumps(sidecar, indent=2), encoding="utf-8")
+            outputs["sidecar"] = {"file": sidecar_path.name,
+                                  "bytes": sidecar_path.stat().st_size,
+                                  "sha256": sha256_file(sidecar_path)}
+
             job.result = {
                 "backend": result.backend,
                 "backendVersion": result.version,
@@ -284,7 +301,6 @@ class JobStore:
                 "log": result.log[-4000:],
             }
             job.state = JobState.SUCCEEDED.value
-            job.finished_at = _now()
             self.save(job)
             return job
 
@@ -311,6 +327,23 @@ class JobStore:
             shutil.copy2(path, dst)
             stored[key] = {"file": dst.name, "bytes": dst.stat().st_size,
                            "sha256": sha256_file(dst)}
+
+        # Derive the delivery mesh and ortho views from the archive geometry.
+        # Best-effort by design: the reconstruction already succeeded, and losing
+        # it over a failed format conversion would be a poor trade for a
+        # contributor who is no longer standing in front of the object.
+        primary = None
+        for key in ("mesh", "point_cloud"):
+            if key in result.outputs:
+                primary = out_dir / result.outputs[key].name
+                break
+        if primary is not None and primary.exists():
+            derived, notes = derive_outputs(primary, out_dir)
+            for key, path in derived.items():
+                stored[key] = {"file": path.name, "bytes": path.stat().st_size,
+                               "sha256": sha256_file(path)}
+            if notes:
+                stored["_geometry"] = notes
         return stored
 
 

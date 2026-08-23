@@ -88,6 +88,28 @@ never in a worker thread minutes later, in a log nobody reads.
 
 ---
 
+## Outputs
+
+| Artefact | Key | Notes |
+| --- | --- | --- |
+| Archive geometry | `point_cloud` / `mesh` | As the backend produced it, never simplified |
+| Delivery mesh | `delivery_mesh` | glTF 2.0 binary (`.glb`); point clouds render as `POINTS`, not as a mesh that failed |
+| Ortho views | `ortho_front` … ×6 | Deterministic PNGs, input to the phase-5 perceptual mesh hash |
+| Sidecar record | `sidecar` | `record.json` — rubric identity, both classes, deferred values |
+| Source set | — | Byte-identical, under `packages/<content-hash>/images/` |
+
+**E57 is not produced.** The spec asks for it and it is the ISO-recognised
+point-cloud standard, but writing its XML-plus-CompressedVector structure without
+`libE57Format` risks a file that opens in one program and fails in the one a
+conservator uses. It is declared absent in `record.json` under `notProduced`
+rather than faked. The PLY is the archive geometry.
+
+Derivation is best-effort: a reconstruction that succeeded is never discarded
+because a delivery format could not be produced. The failure is recorded in the
+`_geometry` note instead.
+
+---
+
 ## Configuration
 
 | Variable | Default | Meaning |
@@ -105,8 +127,8 @@ never in a worker thread minutes later, in a log nobody reads.
 ## Tests
 
 ```bash
-python -m pytest tests -q      # 28 tests, no backend required
-python ../tools/server-e2e.py  # against a running server
+python -m pytest tests -q      # 37 tests, no backend required
+python ../tools/server-e2e.py  # against a running server, re-runnable
 ```
 
 One test runs the JavaScript scorer and the Python scorer over 200 randomised
@@ -114,6 +136,9 @@ measurement sets and requires them to agree on class, score and limiting
 dimension. Two implementations of one rubric is exactly where a threshold
 quietly drifts, and the failure is silent: the phone tells a contributor "study
 grade" and the server later files the same capture as "indicative".
+
+The glTF writer is checked with `pygltflib` — an independent parser. Writing a
+format and reading it back with your own reader proves only self-consistency.
 
 ## Storage layout
 

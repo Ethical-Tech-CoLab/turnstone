@@ -59,7 +59,10 @@ status, r1 = post_multipart(BASE + "/jobs", {"backend": "simulated"},
                             {"package": (ZIP.name, data)})
 print(f"  HTTP {status} in {time.time()-t0:.1f}s")
 print("  ", json.dumps({k: v for k, v in r1.items() if k != "job"}, indent=2))
-check("upload accepted", status == 202, f"HTTP {status}")
+# 202 on a fresh server, 200 if this package was already ingested by an earlier
+# run. Both are correct; pinning it to 202 would make this script runnable only
+# once, and a test people can only run once is a test they stop running.
+check("upload accepted", status in (200, 202), f"HTTP {status}")
 check("all 9 photographs ingested", r1.get("sourceImages") == 9, str(r1.get("sourceImages")))
 job_id = r1["job"]["id"]
 content_hash = r1["contentHash"]
@@ -87,9 +90,26 @@ check("job succeeded", job["state"] == "succeeded", job.get("error") or "")
 if job["state"] == "succeeded":
     res = job["result"]
     print("\n== outputs ==")
-    for k, v in res["outputs"].items():
-        print(f"   {k:12s} {v['file']:24s} {v['bytes']:>8d} bytes  {v['sha256'][:12]}")
-    check("a mesh or point cloud was produced", len(res["outputs"]) > 0)
+    for k, v in sorted(res["outputs"].items()):
+        if isinstance(v, dict) and "file" in v:
+            print(f"   {k:16s} {v['file']:20s} {v['bytes']:>8d} bytes  {v['sha256'][:12]}")
+    check("a mesh or point cloud was produced", "point_cloud" in res["outputs"] or "mesh" in res["outputs"])
+    check("a glTF delivery mesh was derived", "delivery_mesh" in res["outputs"])
+    check("six ortho views were rendered",
+          sum(1 for k in res["outputs"] if k.startswith("ortho_")) == 6)
+    check("a sidecar record was written", "sidecar" in res["outputs"])
+
+    print("\n== artefacts are downloadable ==")
+    import urllib.request as _u
+    for key in ("delivery_mesh", "sidecar", "ortho_front"):
+        if key in res["outputs"]:
+            fn = res["outputs"][key]["file"]
+            with _u.urlopen(f"{BASE}/jobs/{job_id}/outputs/{fn}") as r:
+                body = r.read()
+            expect = res["outputs"][key]["bytes"]
+            check(f"{key} downloads intact", len(body) == expect, f"{len(body)}/{expect} bytes")
+            if key == "delivery_mesh":
+                check("the delivery mesh is a real GLB", body[:4] == b"glTF", body[:4].hex())
 
     print("\n== quality ==")
     _, q = get(f"/jobs/{job_id}/quality")
@@ -129,7 +149,11 @@ if job["state"] == "succeeded":
     check("photographs staged for the backend are unmodified", same2)
 
 print("\n== re-run with different settings (R-8.7) ==")
-status, rr = post_multipart(BASE + f"/jobs/{job_id}/rerun", {"backend": "simulated", "quality": "high"}, {})
+# A quality value unique to this run, so the re-run is genuinely new every time
+# rather than colliding with a previous execution of this script.
+unique_quality = f"e2e-{int(time.time())}"
+status, rr = post_multipart(BASE + f"/jobs/{job_id}/rerun",
+                            {"backend": "simulated", "quality": unique_quality}, {})
 check("re-run creates a distinct job", rr.get("created") is True and rr["job"]["id"] != job_id,
       f"{rr['job']['id']} vs {job_id}")
 check("re-run reuses the stored photographs", rr["job"]["content_hash"] == content_hash)

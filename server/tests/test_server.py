@@ -543,3 +543,199 @@ def test_a_failed_job_is_recorded_rather_than_lost(tmp_path):
     assert done.state == "failed"
     assert done.error
     assert store.find(job.id).state == "failed", "the failure must be readable back from disk"
+
+
+# ------------------------------------------------------------------- outputs
+
+def _cube() -> "Mesh":
+    from turnstone_server.outputs import Mesh
+    v = [(0, 0, 0), (1, 0, 0), (1, 1, 0), (0, 1, 0),
+         (0, 0, 1), (1, 0, 1), (1, 1, 1), (0, 1, 1)]
+    f = [(0, 1, 2), (0, 2, 3), (4, 6, 5), (4, 7, 6), (0, 4, 5), (0, 5, 1),
+         (1, 5, 6), (1, 6, 2), (2, 6, 7), (2, 7, 3), (3, 7, 4), (3, 4, 0)]
+    return Mesh(vertices=[tuple(map(float, x)) for x in v], faces=f)
+
+
+def test_ply_round_trips_through_ascii(tmp_path):
+    from turnstone_server.outputs import read_ply
+    mesh = _cube()
+    p = tmp_path / "c.ply"
+    lines = ["ply", "format ascii 1.0", f"element vertex {len(mesh.vertices)}",
+             "property float x", "property float y", "property float z",
+             f"element face {len(mesh.faces)}", "property list uchar int vertex_index",
+             "end_header"]
+    lines += [f"{x} {y} {z}" for x, y, z in mesh.vertices]
+    lines += [f"3 {a} {b} {c}" for a, b, c in mesh.faces]
+    p.write_bytes(("\n".join(lines) + "\n").encode())
+
+    got = read_ply(p)
+    assert got.vertices == mesh.vertices
+    assert got.faces == mesh.faces
+
+
+def test_ply_reads_binary_little_endian(tmp_path):
+    import struct
+    from turnstone_server.outputs import read_ply
+    mesh = _cube()
+    header = (
+        "ply\nformat binary_little_endian 1.0\n"
+        f"element vertex {len(mesh.vertices)}\n"
+        "property float x\nproperty float y\nproperty float z\n"
+        f"element face {len(mesh.faces)}\n"
+        "property list uchar int vertex_index\nend_header\n"
+    ).encode()
+    body = b"".join(struct.pack("<3f", *v) for v in mesh.vertices)
+    body += b"".join(struct.pack("<B3i", 3, *f) for f in mesh.faces)
+    p = tmp_path / "b.ply"
+    p.write_bytes(header + body)
+
+    got = read_ply(p)
+    assert len(got.vertices) == 8
+    assert got.faces == mesh.faces
+
+
+def test_ply_with_unsupported_format_is_refused(tmp_path):
+    from turnstone_server.outputs import PlyError, read_ply
+    p = tmp_path / "be.ply"
+    p.write_bytes(b"ply\nformat binary_big_endian 1.0\nelement vertex 1\n"
+                  b"property float x\nend_header\n\x00\x00\x00\x00")
+    with pytest.raises(PlyError, match="unsupported PLY format"):
+        read_ply(p)
+
+
+def test_glb_is_valid_to_an_independent_parser(tmp_path):
+    """
+    Checked with pygltflib, not with our own reader.
+
+    Writing a format and then reading it back with the same code proves only
+    that it is self-consistent. The question that matters is whether anything
+    else can open it.
+    """
+    pygltflib = pytest.importorskip("pygltflib")
+    from turnstone_server.outputs import write_glb
+
+    out = write_glb(_cube(), tmp_path / "model.glb")
+    g = pygltflib.GLTF2().load(str(out))
+
+    assert g.asset.version == "2.0"
+    assert len(g.meshes) == 1
+    prim = g.meshes[0].primitives[0]
+    assert prim.mode == 4, "a mesh with faces must be TRIANGLES"
+
+    pos = g.accessors[prim.attributes.POSITION]
+    assert pos.count == 8
+    assert pos.type == "VEC3"
+    # Required by the glTF spec; without them a viewer cannot frame the model
+    # and opens to an empty screen.
+    assert pos.min == [0.0, 0.0, 0.0]
+    assert pos.max == [1.0, 1.0, 1.0]
+
+    idx = g.accessors[prim.indices]
+    assert idx.count == 36, "12 triangles"
+
+    # The vertex data must survive the trip, not merely be structurally present.
+    blob = g.binary_blob()
+    view = g.bufferViews[pos.bufferView]
+    import struct
+    verts = struct.unpack_from("<24f", blob, view.byteOffset)
+    assert set(verts) == {0.0, 1.0}
+
+
+def test_point_cloud_is_written_as_points_not_a_broken_mesh(tmp_path):
+    pygltflib = pytest.importorskip("pygltflib")
+    from turnstone_server.outputs import Mesh, write_glb
+
+    cloud = Mesh(vertices=[(float(i), 0.0, 0.0) for i in range(10)])
+    out = write_glb(cloud, tmp_path / "cloud.glb")
+    g = pygltflib.GLTF2().load(str(out))
+    prim = g.meshes[0].primitives[0]
+    assert prim.mode == 0, "a point cloud must render as POINTS"
+    assert prim.indices is None
+
+
+def test_ortho_views_are_deterministic(tmp_path):
+    """
+    Byte-identical across runs.
+
+    These feed the perceptual mesh hash in phase 5. A renderer that varies by a
+    pixel between runs makes the hash meaningless without anyone noticing.
+    """
+    import hashlib
+    from turnstone_server.outputs import render_ortho_views
+
+    a = render_ortho_views(_cube(), tmp_path / "a")
+    b = render_ortho_views(_cube(), tmp_path / "b")
+    assert len(a) == 6, "six views, one down each axis"
+
+    for key in a:
+        ha = hashlib.sha256(a[key].read_bytes()).hexdigest()
+        hb = hashlib.sha256(b[key].read_bytes()).hexdigest()
+        assert ha == hb, f"{key} is not reproducible"
+
+
+def test_ortho_views_actually_contain_the_object(tmp_path):
+    """A renderer that silently produces six blank pages would pass a hash test."""
+    from PIL import Image
+    from turnstone_server.outputs import render_ortho_views
+
+    views = render_ortho_views(_cube(), tmp_path / "v")
+    for key, p in views.items():
+        img = Image.open(p).convert("L")
+        colours = img.getcolors(maxcolors=256 * 256)
+        non_white = sum(n for n, val in colours if val < 250)
+        assert non_white > 1000, f"{key} looks blank ({non_white} marked pixels)"
+
+
+def test_a_full_job_produces_the_declared_artefacts(tmp_path):
+    cfg = Config(data_dir=tmp_path / "data")
+    store = JobStore(cfg)
+    pkg = store.ingest(_make_package(tmp_path, images=3))
+    job, _ = store.submit(pkg, "simulated", {})
+    done = store.run(job, RUBRIC)
+
+    assert done.state == "succeeded", done.error
+    outputs = done.result["outputs"]
+    assert "point_cloud" in outputs, "archive geometry"
+    assert "delivery_mesh" in outputs, "glTF delivery mesh"
+    assert "sidecar" in outputs, "the record"
+    assert sum(1 for k in outputs if k.startswith("ortho_")) == 6
+
+    out_dir = store.job_dir(job.id) / "outputs"
+    record = json.loads((out_dir / "record.json").read_text(encoding="utf-8"))
+    assert record["sourceImages"]["count"] == 3
+    assert record["quality"]["provisional"] is False
+    assert record["rubric"]["id"] == "heritage-v1"
+    # E57 is asked for by the spec and is not produced. It must be declared
+    # absent by decision rather than quietly missing.
+    assert "e57" in record["notProduced"]
+
+    # The record embeds the finish time, so it must be stamped before the record
+    # is written — and it must agree with the job, not be a second reading of
+    # the clock.
+    assert record["reconstruction"]["startedAt"], "record has no start time"
+    assert record["reconstruction"]["finishedAt"], "record says the job never finished"
+    assert record["reconstruction"]["finishedAt"] == done.finished_at
+
+
+def test_output_derivation_failure_does_not_fail_the_reconstruction(tmp_path, monkeypatch):
+    """
+    A reconstruction that succeeded must not be thrown away because a delivery
+    format could not be derived.
+    """
+    from turnstone_server import outputs as outputs_mod
+
+    def boom(*a, **k):
+        raise RuntimeError("synthetic conversion failure")
+
+    monkeypatch.setattr(outputs_mod, "read_ply", boom)
+
+    cfg = Config(data_dir=tmp_path / "data")
+    store = JobStore(cfg)
+    pkg = store.ingest(_make_package(tmp_path, images=2))
+    job, _ = store.submit(pkg, "simulated", {})
+    done = store.run(job, RUBRIC)
+
+    assert done.state == "succeeded"
+    assert "point_cloud" in done.result["outputs"]
+    assert "delivery_mesh" not in done.result["outputs"]
+    assert "synthetic conversion failure" in json.dumps(done.result["outputs"]["_geometry"])

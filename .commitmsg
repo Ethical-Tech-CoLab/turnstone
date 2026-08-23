@@ -1,0 +1,46 @@
+Produce the declared output set: glTF, ortho views, sidecar
+
+Spec §8.3 names five artefacts and the server was storing only what a backend
+happened to emit. It now derives the rest.
+
+- glTF 2.0 binary delivery mesh, written without a dependency and checked in
+  tests with pygltflib, an independent parser. Writing a format and reading it
+  back with your own reader proves only that you are self-consistent. Point
+  clouds are written with mode POINTS so a reconstruction that recovered no
+  surface looks like a point cloud rather than a mesh that failed to render.
+
+- Six orthographic views. Determinism is the requirement, not beauty: these
+  feed the perceptual mesh hash in phase 5, so the projection is fixed, faces
+  are drawn in a total order, and shading comes from geometry alone. A test
+  renders the same mesh twice and requires byte-identical PNGs, and a second
+  test checks they are not six blank pages — a renderer that silently produced
+  nothing would pass the hash test.
+
+- A sidecar record carrying the rubric identity and the capture class beside
+  the final one. A record showing only the final class cannot be audited:
+  nobody can tell whether reconstruction confirmed the capture estimate or
+  contradicted it, which is the most interesting thing about it.
+
+E57 is NOT produced. The spec asks for it, but writing its XML-plus-
+CompressedVector structure without libE57Format risks a file that opens in one
+program and fails in the one a conservator uses. Every record declares it under
+notProduced with the reason rather than leaving it quietly missing.
+
+Two bugs found by running it:
+
+- The PLY list-property header "property list uchar int vertex_index" was
+  unpacked in the wrong order, so the index type read as "vertex_index" and
+  every binary PLY with faces failed.
+
+- finished_at was stamped after the sidecar was written, so every record
+  claimed the reconstruction never finished. Now stamped once, before, and a
+  test asserts the record agrees with the job.
+
+Derivation is best-effort: a reconstruction that succeeded is never discarded
+because a delivery format could not be produced.
+
+37 server tests. Verified end-to-end against the contributor's real 9-frame
+package, twice consecutively — the harness no longer assumes a clean data
+directory, since a test that can only be run once is one people stop running.
+
+Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>

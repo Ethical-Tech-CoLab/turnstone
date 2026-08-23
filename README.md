@@ -49,6 +49,7 @@ is and what it may be relied upon for.
 | ✅ **Phase 4** · reconstruction service | [`server/`](server) — FastAPI; ingest, licence gate, final quality class |
 | ✅ **Phase 4** · backend adapters | [`server/turnstone_server/backends.py`](server/turnstone_server/backends.py) — AliceVision, COLMAP, OpenMVS, simulated |
 | ✅ **Phase 4** · final assessment | [`server/turnstone_server/quality.py`](server/turnstone_server/quality.py) — deferred dimensions; the class may fall |
+| ✅ **Phase 4** · outputs | [`server/turnstone_server/outputs.py`](server/turnstone_server/outputs.py) — glTF delivery mesh, six deterministic ortho views, sidecar record |
 | ✅ **Phase 4** · container | [`server/Dockerfile`](server/Dockerfile) — DTSF pattern, internal network, non-root ([unbuilt](server/README.md#with-docker)) |
 
 ```bash
@@ -61,7 +62,7 @@ node tools/check-archive-interop.mjs  # archives open in Python's zipfile
 node tools/verify-package.mjs <zip>   # check a session package is complete
 node tools/analyse-session.mjs <dir> [manifest.json]   # what can be built from a real session
 
-python -m pytest server/tests -q      # 28 passing, no backend required
+python -m pytest server/tests -q      # 37 passing, no backend required
 python tools/server-e2e.py            # end-to-end against a running server
 ```
 

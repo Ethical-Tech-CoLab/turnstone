@@ -447,6 +447,15 @@ a 2026 capture benefits from a 2034 pipeline.
 **R-8.8.** Source images SHALL be preserved byte-identical. Re-encoding destroys the hashes
 the binding depends on, and the images are the archive.
 
+> **As built (phase 4).** Delivery mesh, ortho views and sidecar are produced; the ortho
+> renderer is deterministic, because the phase-5 perceptual hash depends on it.
+>
+> **E57 is not produced.** Writing its XML-plus-CompressedVector structure without
+> `libE57Format` risks a file that opens in one program and fails in the one a conservator
+> uses, which is worse than a declared absence. Every record names it under `notProduced`
+> with the reason, and the PLY carries the archive geometry. Revisit when the service is
+> deployed somewhere `libE57Format` can be installed.
+
 ---
 
 ## 9. The record
