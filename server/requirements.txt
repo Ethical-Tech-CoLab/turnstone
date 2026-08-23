@@ -1,0 +1,7 @@
+# Pinned. A reconstruction service that produces a different answer after an
+# unattended dependency upgrade is not evidence, and the whole point of the
+# quality class is that it can be defended years later.
+fastapi==0.141.1
+uvicorn==0.52.3
+python-multipart==0.0.32
+pillow==12.2.0

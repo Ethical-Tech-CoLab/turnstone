@@ -1,0 +1,76 @@
+# Turnstone reconstruction service.
+#
+# Follows the DTSF deployment pattern: an internal network, a named evidence
+# volume, and no published port by default.
+
+services:
+  turnstone-server:
+    build:
+      context: ..
+      dockerfile: server/Dockerfile
+    image: turnstone-server:latest
+    restart: unless-stopped
+
+    environment:
+      TURNSTONE_DATA_DIR: /data/evidence
+      TURNSTONE_PORT: "8080"
+
+      # AliceVision is MPL-2.0 — file-level copyleft that does not reach across
+      # a process boundary — so an institution can self-host this without a
+      # licence conversation. That is why it is the default.
+      TURNSTONE_BACKEND: alicevision
+
+      # AGPL-3.0 backends stay refused unless an operator makes that choice
+      # deliberately. Its network clause reaches this server: offering the
+      # service obliges you to offer the corresponding source of the whole
+      # service to its users. That may be entirely acceptable — but it is the
+      # deployer's decision, not a default.
+      TURNSTONE_ALLOW_AGPL: "0"
+
+      # Reconstruction is CPU- and memory-hungry. Running several at once on one
+      # box makes them all slower and can exhaust RAM, which fails the whole
+      # batch rather than queueing it.
+      TURNSTONE_MAX_CONCURRENT_JOBS: "1"
+
+    volumes:
+      # Named volume, not a bind mount: the photographs in here are the archive,
+      # and a bind mount to a host path that someone later tidies up takes the
+      # evidence with it.
+      - turnstone-evidence:/data/evidence
+
+    networks:
+      - internal
+
+    # No `ports:` stanza. Reaching this service is the job of whatever gateway
+    # already handles identity for the institution running it. Publishing 8080
+    # here would put an endpoint that accepts multi-gigabyte uploads and runs
+    # heavy computation directly on the host interface, unauthenticated.
+    #
+    # To expose it for local development only:
+    #   ports:
+    #     - "127.0.0.1:8080:8080"
+
+    deploy:
+      resources:
+        limits:
+          # Reconstruction will use everything it is given. Without a ceiling one
+          # oversized job takes down everything else sharing the host.
+          memory: 8G
+
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8080/_health', timeout=4).status==200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+networks:
+  internal:
+    # No egress. This service reads uploaded archives and runs reconstruction
+    # software over them; it has no reason to originate outbound connections,
+    # and denying them means a compromised backend cannot exfiltrate the
+    # photographs it was given.
+    internal: true
+
+volumes:
+  turnstone-evidence:

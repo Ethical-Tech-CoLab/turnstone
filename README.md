@@ -46,7 +46,10 @@ is and what it may be relied upon for.
 | ✅ **Phase 2** · session packages | [`lib/zip.js`](lib/zip.js) — photographs, manifest and checksums leave the device as a `.zip` |
 | ✅ **Phase 3** · printable mats | [`docs/assets/`](docs/assets) — scale bar, colour patches, fiducials; verified 180.00 mm |
 | ✅ **Phase 3** · scale reference | [`lib/target.js`](lib/target.js) — measured length → GSD, with a scaled-print warning |
-| ⬜ Phase 4 | Reconstruction server (Docker, AliceVision) |
+| ✅ **Phase 4** · reconstruction service | [`server/`](server) — FastAPI; ingest, licence gate, final quality class |
+| ✅ **Phase 4** · backend adapters | [`server/turnstone_server/backends.py`](server/turnstone_server/backends.py) — AliceVision, COLMAP, OpenMVS, simulated |
+| ✅ **Phase 4** · final assessment | [`server/turnstone_server/quality.py`](server/turnstone_server/quality.py) — deferred dimensions; the class may fall |
+| ✅ **Phase 4** · container | [`server/Dockerfile`](server/Dockerfile) — DTSF pattern, internal network, non-root ([unbuilt](server/README.md#with-docker)) |
 
 ```bash
 node --test test/*.test.mjs           # 137 passing
@@ -57,6 +60,9 @@ node tools/capture-probe.mjs          # drives the capture client, incl. offline
 node tools/check-archive-interop.mjs  # archives open in Python's zipfile
 node tools/verify-package.mjs <zip>   # check a session package is complete
 node tools/analyse-session.mjs <dir> [manifest.json]   # what can be built from a real session
+
+python -m pytest server/tests -q      # 28 passing, no backend required
+python tools/server-e2e.py            # end-to-end against a running server
 ```
 
 ---

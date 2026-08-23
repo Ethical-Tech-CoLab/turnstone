@@ -564,11 +564,11 @@ A build is conformant when these pass. Each exists because getting it wrong is p
 | C-7 | No module imports a provenance-confidence symbol (R-10.3) | phase 6 |
 | C-8 | Overlap formula matches the §6.3 table within 0.5° across the FOV range | **implemented** |
 | C-9 | `heritage-v1` thresholds match DPA's `rubric.ts` exactly | **implemented** |
-| C-10 | Guidance returns exactly one instruction, stable under hysteresis across jittering input | phase 2 |
+| C-10 | Guidance returns exactly one instruction, stable under hysteresis across jittering input | **implemented** |
 | C-11 | `ar-derived` scale never permits `reference` | **implemented** |
-| C-12 | Source images are byte-identical after a full round trip | phase 4 |
-| C-13 | Reconstruction is idempotent on session content hash | phase 4 |
-| C-14 | Post-reconstruction surface completeness can *lower* the class, and the record records that it did | phase 4 |
+| C-12 | Source images are byte-identical after a full round trip | **implemented** |
+| C-13 | Reconstruction is idempotent on session content hash | **implemented** |
+| C-14 | Post-reconstruction surface completeness can *lower* the class, and the record records that it did | **implemented** |
 
 ---
 
@@ -579,9 +579,9 @@ A build is conformant when these pass. Each exists because getting it wrong is p
 | **0 · Foundation** | Own repository; rubric as data + `heritage-v1`; scoring engine; overlap geometry; conformance tests C-1, C-2, C-3, C-8, C-9, C-11 | **done** |
 | **1 · Metrics** | §6 extractors against a fixture corpus of known-good and known-bad frames; live demo | **done** — closes the gap DPA names |
 | **2 · Capture client** | Coverage dial, guidance loop, auto-capture, session store, offline | **done** — 108 tests, 24 browser checks |
-| **3 · Target** | Printable SVG target, marker detection, measured-length entry, masking | next |
-| **4 · Server** | Docker, AliceVision backend, job model, outputs | |
-| **5 · Binding** | `ReconstructionBinding`, perceptual mesh hash, C-6 | |
+| **3 · Target** | Printable SVG target, marker detection, measured-length entry, masking | **done** — mats verified dimensionally correct |
+| **4 · Server** | Docker, AliceVision backend, job model, outputs | **done** — 28 tests; C-12, C-13, C-14 closed |
+| **5 · Binding** | `ReconstructionBinding`, perceptual mesh hash, C-6 | next |
 | **6 · Interop** | CRMdig + IIIF 3D export, DPA passport wiring | |
 
 ### Phase 2, as built

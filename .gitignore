@@ -55,4 +55,5 @@ out/
 # Server scratch
 server/.venv/
 server/data/
+server/.testdata/
 .pytest_cache/

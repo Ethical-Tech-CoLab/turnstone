@@ -26,10 +26,17 @@ jobs:
           node-version: '22'
 
       - name: Run conformance tests
-        run: node --test test/conformance.test.mjs test/metrics.test.mjs test/guidance.test.mjs test/capture.test.mjs test/zip.test.mjs
+        run: node --test test/conformance.test.mjs test/metrics.test.mjs test/guidance.test.mjs test/capture.test.mjs test/zip.test.mjs test/target.test.mjs
 
       - name: Check archives open in an independent implementation
         run: node tools/check-archive-interop.mjs
+
+      # A printed scale reference whose bar is not the length it claims silently
+      # scales every measurement taken from the reconstruction. Checked in CI
+      # because the error is invisible on screen and only shows up against a
+      # ruler.
+      - name: Check printable targets measure what they claim
+        run: node tools/check-targets.mjs
 
       # The rubric is data and is meant to be edited by people who are not
       # editing code — a curator arguing with a threshold should not need a
@@ -37,3 +44,33 @@ jobs:
       # at capture time in a museum with the object already back in its case.
       - name: Validate rubric files
         run: node tools/validate-rubrics.mjs
+
+  server:
+    name: Reconstruction service
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      # Node is needed here too: one test runs the JavaScript scorer and the
+      # Python scorer over the same inputs and requires them to agree.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r server/requirements.txt pytest
+
+      # No reconstruction backend is installed on the runner, and that is the
+      # point: the simulated backend is a first-class backend so ingest,
+      # idempotency, the licence gate and byte-identity are all exercisable
+      # without several gigabytes of CUDA.
+      - name: Run server tests
+        run: python -m pytest server/tests -q
+
+      - name: Check the container definition is well formed
+        run: python -c "import yaml,sys; d=yaml.safe_load(open('server/deploy/docker-compose.yaml')); assert d['networks']['internal']['internal'] is True, 'the reconstruction network must stay internal'; assert 'ports' not in d['services']['turnstone-server'], 'the service must not publish a port by default'; print('compose OK')"
+
