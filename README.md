@@ -51,9 +51,15 @@ is and what it may be relied upon for.
 | ✅ **Phase 4** · final assessment | [`server/turnstone_server/quality.py`](server/turnstone_server/quality.py) — deferred dimensions; the class may fall |
 | ✅ **Phase 4** · outputs | [`server/turnstone_server/outputs.py`](server/turnstone_server/outputs.py) — glTF delivery mesh, six deterministic ortho views, sidecar record |
 | ✅ **Phase 4** · container | [`server/Dockerfile`](server/Dockerfile) — DTSF pattern, internal network, non-root ([unbuilt](server/README.md#with-docker)) |
+| ✅ **Phase 5** · the record | [`lib/record.js`](lib/record.js) — cannot be built without the legitimacy disclaimer; nothing defaults to public |
+| ✅ **Phase 5** · disclaimers as data | [`record/disclaimers-v1.json`](record/disclaimers-v1.json) — one wording, read by both implementations |
+| ✅ **Phase 5** · binding | [`lib/binding.js`](lib/binding.js) — spans the gap C2PA leaves between sealed photographs and an unsealed mesh |
+| ✅ **Phase 5** · perceptual hash | [`lib/phash.js`](lib/phash.js) — dHash over the six ortho views; survives re-export |
+| ✅ **Phase 5** · signing | [`server/turnstone_server/binding.py`](server/turnstone_server/binding.py) — Ed25519, verified from Node in CI |
+| ✅ **Phase 5** · verifier | [`tools/verify-reconstruction.py`](tools/verify-reconstruction.py) — for whoever did *not* produce the reconstruction |
 
 ```bash
-node --test test/*.test.mjs           # 137 passing
+node --test test/*.test.mjs           # 171 passing
 node tools/validate-rubrics.mjs       # rubric files load and score
 node tools/check-targets.mjs          # printable mats measure what they claim
 node tools/demo-probe.mjs             # drives the demo in headless Chrome
@@ -62,8 +68,10 @@ node tools/check-archive-interop.mjs  # archives open in Python's zipfile
 node tools/verify-package.mjs <zip>   # check a session package is complete
 node tools/analyse-session.mjs <dir> [manifest.json]   # what can be built from a real session
 
-python -m pytest server/tests -q      # 37 passing, no backend required
+python -m pytest server/tests -q      # 71 passing, no backend required
 python tools/server-e2e.py            # end-to-end against a running server
+python tools/check-verifier.py        # damages a real package 8 ways; each must be caught
+python tools/verify-reconstruction.py <outputs-dir> [--key <hex>]
 ```
 
 ---

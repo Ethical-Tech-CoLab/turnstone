@@ -26,7 +26,7 @@ jobs:
           node-version: '22'
 
       - name: Run conformance tests
-        run: node --test test/conformance.test.mjs test/metrics.test.mjs test/guidance.test.mjs test/capture.test.mjs test/zip.test.mjs test/target.test.mjs
+        run: node --test test/conformance.test.mjs test/metrics.test.mjs test/guidance.test.mjs test/capture.test.mjs test/zip.test.mjs test/target.test.mjs test/record.test.mjs test/binding.test.mjs test/boundary.test.mjs
 
       - name: Check archives open in an independent implementation
         run: node tools/check-archive-interop.mjs
@@ -70,6 +70,13 @@ jobs:
       # without several gigabytes of CUDA.
       - name: Run server tests
         run: python -m pytest server/tests -q
+
+      # The verifier is the tool a museum runs on a package it did not produce.
+      # A verifier that has only ever been run on good data is not a verifier,
+      # so this damages a real package eight different ways and requires each
+      # one to be caught.
+      - name: Check the verifier catches tampering
+        run: python tools/check-verifier.py
 
       - name: Check the container definition is well formed
         run: python -c "import yaml,sys; d=yaml.safe_load(open('server/deploy/docker-compose.yaml')); assert d['networks']['internal']['internal'] is True, 'the reconstruction network must stay internal'; assert 'ports' not in d['services']['turnstone-server'], 'the service must not publish a port by default'; print('compose OK')"

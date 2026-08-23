@@ -537,6 +537,27 @@ where to attack.
 **R-9.7.** The binding SHALL carry `chainNote` stating that it does **not** make the
 reconstruction reproducible, because photogrammetry pipelines are not bit-deterministic.
 
+> **As built (phase 5).** The binding is signed with **Ed25519**, and a test has Node verify
+> a signature made by the Python server — a signature only one codebase can check is not much
+> of a signature.
+>
+> **Key management is deliberately not solved here.** A key the service generated and stored
+> beside the data it signs proves nothing: whoever can alter a binding can re-sign it. The
+> operator supplies a key from whatever already establishes their institutional identity, and
+> with none configured the binding is emitted **unsigned and says so** in a machine-readable
+> field. A misconfigured key path is a hard failure rather than a silent fall back to
+> unsigned, because an operator who thought they were signing would not discover otherwise
+> until someone tried to verify.
+>
+> **`chainComplete` is false for every capture today.** The browser client cannot yet produce
+> a C2PA capture-time seal, so `sealedImageCount` is 0. This is the correct and useful
+> answer: it names exactly what is missing before the chain closes rather than implying a
+> proof that does not exist.
+>
+> The disclaimer and chain-note text live in `record/disclaimers-v1.json` and are read by both
+> implementations, with a test asserting they are byte-identical. A paraphrased legal
+> statement is a different statement, and nothing in a record would show which wording was used.
+
 ---
 
 ## 10. DPA integration
@@ -567,10 +588,10 @@ A build is conformant when these pass. Each exists because getting it wrong is p
 | C-1 | Class equals the worst dimension, never the mean | **implemented** |
 | C-2 | Score > 80 with class `indicative` when only the scale reference is missing (R-5.4) | **implemented** |
 | C-3 | An unmeasured dimension yields `not measured`, never a pass | **implemented** |
-| C-4 | Record construction throws without the legitimacy disclaimer | phase 5 |
-| C-5 | Funerary and sacred default to `source-community` | phase 5 |
-| C-6 | `chainComplete` false when any source image is unsealed | phase 5 |
-| C-7 | No module imports a provenance-confidence symbol (R-10.3) | phase 6 |
+| C-4 | Record construction throws without the legitimacy disclaimer | **implemented** |
+| C-5 | Funerary and sacred default to `source-community` | **implemented** |
+| C-6 | `chainComplete` false when any source image is unsealed | **implemented** |
+| C-7 | No module imports a provenance-confidence symbol (R-10.3) | **implemented** |
 | C-8 | Overlap formula matches the §6.3 table within 0.5° across the FOV range | **implemented** |
 | C-9 | `heritage-v1` thresholds match DPA's `rubric.ts` exactly | **implemented** |
 | C-10 | Guidance returns exactly one instruction, stable under hysteresis across jittering input | **implemented** |
@@ -590,8 +611,8 @@ A build is conformant when these pass. Each exists because getting it wrong is p
 | **2 · Capture client** | Coverage dial, guidance loop, auto-capture, session store, offline | **done** — 108 tests, 24 browser checks |
 | **3 · Target** | Printable SVG target, marker detection, measured-length entry, masking | **done** — mats verified dimensionally correct |
 | **4 · Server** | Docker, AliceVision backend, job model, outputs | **done** — 28 tests; C-12, C-13, C-14 closed |
-| **5 · Binding** | `ReconstructionBinding`, perceptual mesh hash, C-6 | next |
-| **6 · Interop** | CRMdig + IIIF 3D export, DPA passport wiring | |
+| **5 · Binding** | `ReconstructionBinding`, perceptual mesh hash, C-6 | **done** — C-4, C-5, C-6, C-7 closed; Ed25519, cross-verified in Node |
+| **6 · Interop** | CRMdig + IIIF 3D export, DPA passport wiring | next |
 
 ### Phase 2, as built
 

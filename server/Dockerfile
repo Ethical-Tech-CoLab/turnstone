@@ -37,11 +37,14 @@ ENV PATH="/opt/venv/bin:$PATH" \
 WORKDIR /app
 COPY server/turnstone_server /app/turnstone_server
 COPY rubric /app/rubric
+COPY record /app/record
 
-# The rubric is the single source of truth for what a quality class means, and
-# it is baked into the image rather than mounted so a deployment cannot silently
-# score against a different one than it reports.
-ENV TURNSTONE_RUBRIC=/app/rubric/heritage-v1.json
+# The rubric and the disclaimers are the single sources of truth for what a
+# quality class means and what a record asserts. Baked into the image rather
+# than mounted so a deployment cannot silently score against a different rubric
+# than it reports, or assert a paraphrased disclaimer.
+ENV TURNSTONE_RUBRIC=/app/rubric/heritage-v1.json \
+    TURNSTONE_DISCLAIMERS=/app/record/disclaimers-v1.json
 
 RUN useradd --create-home --uid 10001 turnstone \
  && mkdir -p /data/evidence \

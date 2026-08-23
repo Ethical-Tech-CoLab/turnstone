@@ -328,53 +328,67 @@ def render_ortho_views(mesh: Mesh, out_dir: Path, size: int = 512) -> dict[str, 
 
 def build_sidecar(*, job, package, assessment: dict, deferred: dict,
                   backend: str, backend_version: str, outputs: dict,
-                  rubric: dict) -> dict:
+                  rubric: dict, disclaimers: dict, binding: dict | None = None) -> dict:
     """
-    The JSON record that travels with the reconstruction.
+    The record that travels with the reconstruction.
 
-    Carries the rubric identity and the *capture* class alongside the final one.
-    A record showing only the final class cannot be audited: nobody can tell
-    whether reconstruction confirmed the capture estimate or contradicted it,
-    which is the single most interesting thing about it.
+    Built through record.build_record, which REFUSES to produce a record without
+    the legitimacy disclaimer (C-4) and never defaults sensitive material to a
+    public tier (C-5). Both were previously written by hand here, and the
+    hand-written version silently omitted doesNotAttest entirely.
+
+    Carries the *capture* class alongside the final one. A record showing only
+    the final class cannot be audited: nobody can tell whether reconstruction
+    confirmed the capture estimate or contradicted it, which is the single most
+    interesting thing about it.
     """
-    return {
-        "schemaVersion": "1.0",
-        "sessionId": package.session_id,
-        "subject": package.subject,
-        "jobId": job.id,
-        "contentHash": job.content_hash,
-        "rubric": {"id": rubric.get("id"), "version": rubric.get("version")},
-        "reconstruction": {
-            "backend": backend,
-            "backendVersion": backend_version,
-            "parameters": job.parameters,
-            "startedAt": job.started_at,
-            "finishedAt": job.finished_at,
-        },
-        "quality": assessment,
-        "deferredValues": deferred,
-        "sourceImages": {
+    from .record import build_record
+
+    session = package.manifest.get("session") or {}
+
+    record = build_record(
+        disclaimers,
+        session_id=package.session_id,
+        captured_at=session.get("startedAt") or package.manifest.get("exportedAt"),
+        subject=package.subject,
+        rubric={"id": rubric.get("id"), "version": rubric.get("version")},
+        quality=assessment,
+        # Sensitivity travels from the capture client if the contributor set it.
+        # Absent, "ordinary" is assumed — and the resulting tier is still
+        # `museum`, never public.
+        sensitivity=session.get("sensitivity") or "ordinary",
+        disclosure_tier=session.get("disclosureTier"),
+        traditional_knowledge_labels=session.get("traditionalKnowledgeLabels") or [],
+        source_images={
             "count": len(package.image_names),
             "distinct": len(package.digests),
             "byteIdentical": True,
         },
-        "outputs": outputs,
-        "notProduced": {
-            # Declared rather than silently omitted. A consumer looking for the
-            # spec's E57 needs to know it is absent by decision, not by failure.
-            "e57": (
-                "E57 requires libE57Format, which is not installed. Writing its "
-                "XML-plus-CompressedVector structure by hand risks a file that opens "
-                "in one program and fails in another, which is worse than its absence. "
-                "The PLY is the archive geometry."
-            ),
-        },
-        "attests": (
-            "An object with these measurable characteristics was observed in this "
-            "condition, at this place, at this time, by this party — and this is a "
-            "tamper-evident record of that observation."
+        binding=binding,
+    )
+
+    record["reconstruction"] = {
+        "backend": backend,
+        "backendVersion": backend_version,
+        "parameters": job.parameters,
+        "startedAt": job.started_at,
+        "finishedAt": job.finished_at,
+    }
+    record["jobId"] = job.id
+    record["contentHash"] = job.content_hash
+    record["deferredValues"] = deferred
+    record["outputs"] = outputs
+    record["notProduced"] = {
+        # Declared rather than silently omitted. A consumer looking for the
+        # spec's E57 needs to know it is absent by decision, not by failure.
+        "e57": (
+            "E57 requires libE57Format, which is not installed. Writing its "
+            "XML-plus-CompressedVector structure by hand risks a file that opens "
+            "in one program and fails in another, which is worse than its absence. "
+            "The PLY is the archive geometry."
         ),
     }
+    return record
 
 
 def derive_outputs(primary: Path, out_dir: Path) -> tuple[dict[str, Path], dict]:

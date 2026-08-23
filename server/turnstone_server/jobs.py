@@ -33,6 +33,10 @@ from enum import Enum
 from pathlib import Path
 
 from .backends import LicenceRefused, get_backend
+from .binding import (
+    SigningKey, build_binding, load_disclaimers, perceptual_hash_of_views,
+    sign_binding, source_set_hash,
+)
 from .config import Config
 from .outputs import build_sidecar, derive_outputs
 from .package import SessionPackage, extract_package, open_package, sha256_file
@@ -274,10 +278,14 @@ class JobStore:
             # the one thing it exists to attest to.
             job.finished_at = _now()
 
+            disclaimers = load_disclaimers(self.config.disclaimers_path)
+            binding = self._build_binding(job, pkg, result, outputs, disclaimers)
+
             sidecar = build_sidecar(
                 job=job, package=pkg, assessment=assessment.to_dict(),
                 deferred=deferred_values, backend=result.backend,
                 backend_version=result.version, outputs=outputs, rubric=rubric,
+                disclaimers=disclaimers, binding=binding,
             )
             sidecar_path = self.job_dir(job.id) / "outputs" / "record.json"
             sidecar_path.write_text(json.dumps(sidecar, indent=2), encoding="utf-8")
@@ -317,6 +325,87 @@ class JobStore:
             job.finished_at = _now()
             self.save(job)
             return job
+
+    def _build_binding(self, job: Job, pkg: SessionPackage, result, outputs: dict,
+                       disclaimers: dict) -> dict:
+        """
+        Span the gap C2PA leaves between sealed photographs and an unsealed mesh.
+
+        `chainComplete` is true only when EVERY source image carried a
+        verifiable capture-time seal. Today the browser client cannot produce
+        one, so it is false for every real capture — and that is the correct,
+        useful answer: it says exactly what is missing before the chain closes,
+        rather than implying a proof that does not exist.
+        """
+        # A frame counts as sealed only on an explicit, positive claim. Absence
+        # is unsealed. Anything else would let a manifest omit the field and be
+        # read as sealed.
+        by_name = {}
+        for frame in pkg.manifest.get("frames") or []:
+            seal = frame.get("seal") or {}
+            by_name[frame.get("id")] = seal.get("verified") is True
+
+        images = [
+            {"name": n, "sha256": h,
+             "sealed": by_name.get(Path(n).stem, False)}
+            for h, n in sorted((h, n) for h, n in
+                               ((sha256_file(pkg.root / n), n) for n in pkg.image_names))
+        ]
+
+        set_hash = source_set_hash([i["sha256"] for i in images])
+
+        primary_key = "mesh" if "mesh" in outputs else "point_cloud"
+        output_hash = (outputs.get(primary_key) or {}).get("sha256") or ""
+
+        perceptual, per_view = None, None
+        view_paths = {
+            k: self.job_dir(job.id) / "outputs" / v["file"]
+            for k, v in outputs.items()
+            if k.startswith("ortho_") and isinstance(v, dict) and "file" in v
+        }
+        if len(view_paths) == 6:
+            try:
+                perceptual, per_view = perceptual_hash_of_views(view_paths)
+            except Exception as e:  # noqa: BLE001
+                # A missing perceptual hash weakens re-association; it does not
+                # invalidate the binding, and losing the binding over it would
+                # be a far worse trade.
+                per_view = {"error": str(e)}
+
+        binding = build_binding(
+            session_id=pkg.session_id,
+            job_id=job.id,
+            set_hash=set_hash,
+            images=images,
+            pipeline={"backend": result.backend, "version": result.version,
+                      "parameters": result.parameters},
+            output_hash=output_hash,
+            output_perceptual_hash=perceptual,
+            perceptual_views=per_view,
+            chain_note=disclaimers["chainNote"],
+            created_at=_now(),
+        )
+        return sign_binding(binding, self._signing_key())
+
+    def _signing_key(self):
+        """
+        Load the operator's key, or none.
+
+        Never generates one. A key the service made and stored beside the data
+        it signs proves nothing — whoever can alter a binding can re-sign it —
+        and an unsigned binding that says so is more honest than a signed one
+        that means nothing.
+        """
+        path = self.config.signing_key_path
+        if path is None:
+            return None
+        if not path.exists():
+            raise RuntimeError(
+                f"TURNSTONE_SIGNING_KEY points at {path}, which does not exist. Refusing to "
+                f"fall back to unsigned: an operator who configured signing and silently got "
+                f"unsigned bindings would not discover it until someone tried to verify one."
+            )
+        return SigningKey.from_file(path, self.config.signing_key_id or None)
 
     def _store_outputs(self, job: Job, result) -> dict:
         out_dir = self.job_dir(job.id) / "outputs"

@@ -65,6 +65,29 @@ class Config:
         or (Path(__file__).resolve().parents[2] / "rubric" / "heritage-v1.json")
     ))
 
+    #: The exact text of what a record attests and declines to attest.
+    #:
+    #: Read by this server and by the JavaScript client from one file, so a legal
+    #: statement cannot end up paraphrased differently in two implementations.
+    disclaimers_path: Path = field(default_factory=lambda: Path(
+        os.environ.get("TURNSTONE_DISCLAIMERS")
+        or (Path(__file__).resolve().parents[2] / "record" / "disclaimers-v1.json")
+    ))
+
+    #: Raw 32-byte Ed25519 seed used to sign bindings.
+    #:
+    #: Supplied by the operator from whatever already establishes their
+    #: institutional identity. NOT generated here: a key the service made and
+    #: stored beside the data it signs proves nothing, because whoever can alter
+    #: a binding can re-sign it. With no key configured, bindings are emitted
+    #: unsigned and say so — an honest absence beats convincing theatre.
+    signing_key_path: Path | None = field(default_factory=lambda: (
+        Path(os.environ["TURNSTONE_SIGNING_KEY"])
+        if os.environ.get("TURNSTONE_SIGNING_KEY") else None
+    ))
+
+    signing_key_id: str = os.environ.get("TURNSTONE_SIGNING_KEY_ID", "")
+
     @property
     def packages_dir(self) -> Path:
         return self.data_dir / "packages"

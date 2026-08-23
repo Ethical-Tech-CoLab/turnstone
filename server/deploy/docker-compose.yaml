@@ -15,6 +15,15 @@ services:
       TURNSTONE_DATA_DIR: /data/evidence
       TURNSTONE_PORT: "8080"
 
+      # Bindings are signed with a key the OPERATOR supplies, from whatever
+      # already establishes their institutional identity. A key this service
+      # generated for itself would prove nothing — whoever can alter a binding
+      # could re-sign it — so none is invented, and with none configured the
+      # binding is emitted unsigned and says so.
+      #
+      # TURNSTONE_SIGNING_KEY: /run/secrets/turnstone-signing.key
+      # TURNSTONE_SIGNING_KEY_ID: your-institution
+
       # AliceVision is MPL-2.0 — file-level copyleft that does not reach across
       # a process boundary — so an institution can self-host this without a
       # licence conversation. That is why it is the default.

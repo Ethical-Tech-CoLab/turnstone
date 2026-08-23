@@ -110,6 +110,96 @@ because a delivery format could not be produced. The failure is recorded in the
 
 ---
 
+## Provenance: the record and the binding
+
+C2PA's normative format list is JPEG, PNG, GIF, TIFF, BMFF video and PDF. **glTF, USDZ,
+E57 and PLY are absent.** Photographs can be sealed to a very high standard and the mesh
+built from them inherits none of it — the chain breaks at exactly the step that produces
+the artefact anyone will look at.
+
+The `ReconstructionBinding` spans that gap: a signed statement that these photographs,
+through this pipeline, produced this mesh.
+
+**`chainComplete` is true only when every source image carried a verifiable seal.** Not
+most. A chain that is 90% sealed is not 90% of a proof — the unsealed 10% is precisely
+where a substituted photograph would be inserted, because an attacker picks where to
+attack rather than spreading tampering evenly to keep a percentage looking respectable.
+The counts are reported for diagnosis; only the boolean means anything.
+
+> Today `chainComplete` is **false for every capture**: the browser client cannot yet
+> produce a C2PA capture-time seal. That is the correct answer, and it names exactly what
+> is missing before the chain closes.
+
+Two hashes cover the output, and they are not interchangeable:
+
+| | Proves | Survives re-export |
+| --- | --- | --- |
+| `outputHash` | yes — exact, cryptographic | no |
+| `outputPerceptualHash` | **no** — dHash is not collision-resistant | yes |
+
+The perceptual hash re-associates a metadata-stripped copy so a human can then check the
+real one. Treating it as evidence of identity would let anyone who can make a
+similar-looking mesh claim to hold the original.
+
+### Signing, and what is deliberately not solved
+
+Bindings are signed with **Ed25519**. A test has Node verify a signature made here — a
+signature only one codebase can check is not much of a signature.
+
+**Key management is not solved by this service, and that is deliberate.** A key it
+generated and stored beside the data it signs would prove nothing: whoever can alter a
+binding can re-sign it. That is theatre, and theatre is worse than an honest absence
+because it reads as assurance.
+
+```bash
+# 32 raw bytes. Supply a key from whatever already establishes your identity.
+TURNSTONE_SIGNING_KEY=/run/secrets/turnstone.key \
+TURNSTONE_SIGNING_KEY_ID=your-institution \
+python -m turnstone_server
+```
+
+With no key configured, bindings are emitted **unsigned and say so** in a field a consumer
+cannot miss. A key path that does not exist is a **hard failure**, never a silent fall back
+— an operator who thought they were signing would otherwise not find out until someone
+tried to verify, long after the capture.
+
+### Verifying
+
+```bash
+python ../tools/verify-reconstruction.py <job>/outputs --key <hex>
+```
+
+Answers four questions separately, because collapsing them into one "VALID" would be worse
+than useless: is the record coherent, do the artefacts match their hashes, was the binding
+altered since signing, and is the chain actually complete. "Signed by someone" and "signed
+by someone you trust" are different facts.
+
+---
+
+## Disclosure defaults
+
+Capture assets **never** default to public.
+
+| Material | Default tier |
+| --- | --- |
+| Ordinary | `museum` |
+| Funerary | `source-community` |
+| Sacred | `source-community` |
+| *anything unrecognised* | `source-community` — fails closed |
+
+A mesh is a replication asset: good enough to study is good enough to 3D-print or forge
+from. Disclosure may be **restricted** by argument but never **relaxed** — relaxing is a
+decision someone must own, and it does not belong somewhere a typo can make it.
+
+> **Known gap, carried from DPA and deliberately unresolved:** the `source-community` tier
+> was designed with no source-community input. That was tolerable when the system described
+> objects in text; it is not tolerable for photorealistic models of funerary material. It
+> travels **inside every record** as `disclosureGap`, because a consumer deciding what to do
+> with such an asset cannot see our backlog. Marking it resolved without consultation would
+> be the precise error the tier exists to prevent.
+
+---
+
 ## Configuration
 
 | Variable | Default | Meaning |
@@ -117,6 +207,9 @@ because a delivery format could not be produced. The failure is recorded in the
 | `TURNSTONE_PORT` | `8080` | Listen port |
 | `TURNSTONE_DATA_DIR` | `./data` | Packages, job state and outputs |
 | `TURNSTONE_RUBRIC` | repo `rubric/heritage-v1.json` | The rubric scored against |
+| `TURNSTONE_DISCLAIMERS` | repo `record/disclaimers-v1.json` | Exact text of what a record attests |
+| `TURNSTONE_SIGNING_KEY` | unset | Path to a raw 32-byte Ed25519 seed; unset means unsigned |
+| `TURNSTONE_SIGNING_KEY_ID` | unset | Identifier recorded in the signature |
 | `TURNSTONE_BACKEND` | `alicevision` | Default backend |
 | `TURNSTONE_ALLOW_AGPL` | unset | Accept AGPL backend obligations |
 | `TURNSTONE_MAX_UPLOAD_BYTES` | 8 GiB | Guard against a mis-sent file filling the disk |
@@ -127,18 +220,24 @@ because a delivery format could not be produced. The failure is recorded in the
 ## Tests
 
 ```bash
-python -m pytest tests -q      # 37 tests, no backend required
+python -m pytest tests -q      # 71 tests, no backend required
 python ../tools/server-e2e.py  # against a running server, re-runnable
+python ../tools/check-verifier.py   # damages a real package 8 ways; each must be caught
 ```
 
-One test runs the JavaScript scorer and the Python scorer over 200 randomised
-measurement sets and requires them to agree on class, score and limiting
-dimension. Two implementations of one rubric is exactly where a threshold
-quietly drifts, and the failure is silent: the phone tells a contributor "study
-grade" and the server later files the same capture as "indicative".
+Cross-implementation checks, because each of these fails silently if it drifts:
 
-The glTF writer is checked with `pygltflib` — an independent parser. Writing a
-format and reading it back with your own reader proves only self-consistency.
+- the JavaScript and Python **scorers** must agree on class, score and limiting dimension
+  across 200 randomised measurement sets;
+- the **disclaimer text** must be byte-identical — a paraphrased legal statement is a
+  different statement, and nothing in a record would show which wording was used;
+- **Node must verify an Ed25519 signature made by Python**, over canonical bytes both
+  implementations produce identically;
+- the **perceptual hash** must match across both, since a hash that disagrees cannot
+  re-associate anything, which is its only job.
+
+The glTF writer is checked with `pygltflib` — an independent parser. Writing a format and
+reading it back with your own reader proves only self-consistency.
 
 ## Storage layout
 

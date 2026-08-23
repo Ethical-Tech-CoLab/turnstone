@@ -1,0 +1,56 @@
+{
+  "schemaVersion": "1.0",
+  "id": "disclaimers-v1",
+  "version": "1.0.0",
+  "note": "The exact text of every statement a record makes about itself. This is DATA, read by both the JavaScript client and the Python server, because two implementations that each hold their own copy of a legal statement will eventually disagree by a word — and a record whose disclaimer was paraphrased is not the same statement. Editing this file changes what every record asserts; do not do it casually.",
+
+  "attests": "An object with these measurable characteristics was observed in this condition, at this place, at this time, by this party — and this is a tamper-evident record of that observation.",
+
+  "doesNotAttest": "This record does not attest that the object was lawfully excavated, exported, acquired, or is lawfully held. It records an observation of an object, not a right to it. Capture quality and provenance legitimacy are unrelated: a high-quality capture of an unlawfully held object is a high-quality capture of an unlawfully held object.",
+
+  "chainNote": "This binding establishes that these photographs produced this reconstruction through this pipeline. It does NOT make the reconstruction reproducible: photogrammetry pipelines are not bit-deterministic, and re-running this job on other hardware will produce a different mesh. Verifying the binding tells you the mesh came from these sealed photographs, not that you can recreate it.",
+
+  "replicationNote": "A mesh is a replication asset. Good enough to study is good enough to 3D-print or forge from. Disclosure defaults are therefore restrictive: a default that is too closed can be opened later, and publication cannot be undone.",
+
+  "sensitivity": {
+    "note": "Capture assets never default to public. The tier is a floor, not a ceiling — a holder may restrict further, and only an authorised party may relax it.",
+    "defaults": {
+      "ordinary": "museum",
+      "funerary": "source-community",
+      "sacred": "source-community"
+    },
+    "tiers": ["source-community", "museum", "researcher", "public"],
+    "openGap": {
+      "status": "blocking",
+      "issue": "The source-community tier was designed with no source-community input.",
+      "why": "That was tolerable when the system described objects in text. It is not tolerable for photorealistic models of funerary material, where the asset itself is the sensitive thing. This is recorded as blocking rather than quietly treated as solved, because marking it resolved without consultation would be the precise error the tier exists to prevent.",
+      "carriedFrom": "DPA"
+    }
+  },
+
+  "traditionalKnowledgeLabels": {
+    "note": "Local Contexts TK Labels, carried as a first-class field rather than a free-text note. A label in a notes field is invisible to every system that consumes the record, which is the same as not having it.",
+    "authority": "https://localcontexts.org/labels/traditional-knowledge-labels/",
+    "vocabulary": [
+      { "code": "TK A", "name": "Attribution" },
+      { "code": "TK CL", "name": "Clan" },
+      { "code": "TK F", "name": "Family" },
+      { "code": "TK MC", "name": "Multiple Communities" },
+      { "code": "TK CV", "name": "Community Voice" },
+      { "code": "TK V", "name": "Verified" },
+      { "code": "TK NV", "name": "Non-Verified" },
+      { "code": "TK O", "name": "Outreach" },
+      { "code": "TK OC", "name": "Open to Collaboration" },
+      { "code": "TK CB", "name": "Community Use Only" },
+      { "code": "TK SS", "name": "Seasonal" },
+      { "code": "TK WG", "name": "Women General" },
+      { "code": "TK MG", "name": "Men General" },
+      { "code": "TK MR", "name": "Men Restricted" },
+      { "code": "TK WR", "name": "Women Restricted" },
+      { "code": "TK CS", "name": "Culturally Sensitive" },
+      { "code": "TK SC", "name": "Secret / Sacred" },
+      { "code": "TK NC", "name": "Non-Commercial" },
+      { "code": "TK CO", "name": "Commercial" }
+    ]
+  }
+}
