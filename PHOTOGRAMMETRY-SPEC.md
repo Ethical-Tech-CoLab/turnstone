@@ -577,6 +577,28 @@ would outscore a community with thorough records and a phone, invisibly.
 **R-10.4.** Records SHALL be exportable as CIDOC-CRM / **CRMdig** for museum systems and as
 an **IIIF 3D** manifest for delivery.
 
+> **As built (phase 6).** `GET /jobs/{id}/export/crmdig` and `/export/iiif`.
+>
+> The CRMdig graph follows the real chain of events — `E22 Human-Made Object` ← `L1 digitized`
+> — `D2 Digitization Process` — `L11 had output` → photographs — `L10 had input` →
+> `D10 Software Execution` — `L11 had output` → mesh — because that is what the ontology
+> exists to express. Quality and the binding attach as `E31 Document` / `P70 documents`, which
+> keeps an assertion *about* the mesh distinct from a property *of* it: the class is a claim
+> someone made, attributable and disputable, not an intrinsic fact about a file.
+>
+> **Every term is checked against `record/vocabulary-v1.json` at emit time.** Interop fails in
+> a particular way — an invented class produces a document that parses, validates and means
+> nothing to its consumer, discovered only when an institution tries to ingest it. A term not
+> in the vocabulary cannot be written. Output is verified by expansion under `pyld`, an
+> independent JSON-LD processor.
+>
+> **IIIF 3D is a DRAFT** and every manifest says so in its own `summary`, where someone opening
+> the file will read it. It defines `Scene` (absent from Presentation 3.0) and targets
+> Presentation API 4, whose context URI is not yet published. The disclaimer travels as
+> `requiredStatement`, and an incomplete chain of custody and a non-public disclosure tier are
+> both stated in the summary — a manifest *is* a delivery format, and one built from a record
+> not cleared for public delivery must not look like a publication.
+
 ---
 
 ## 11. Conformance
@@ -612,7 +634,7 @@ A build is conformant when these pass. Each exists because getting it wrong is p
 | **3 · Target** | Printable SVG target, marker detection, measured-length entry, masking | **done** — mats verified dimensionally correct |
 | **4 · Server** | Docker, AliceVision backend, job model, outputs | **done** — 28 tests; C-12, C-13, C-14 closed |
 | **5 · Binding** | `ReconstructionBinding`, perceptual mesh hash, C-6 | **done** — C-4, C-5, C-6, C-7 closed; Ed25519, cross-verified in Node |
-| **6 · Interop** | CRMdig + IIIF 3D export, DPA passport wiring | next |
+| **6 · Interop** | CRMdig + IIIF 3D export, DPA passport wiring | **done** — R-10.1…R-10.4; vocabulary checked at emit time |
 
 ### Phase 2, as built
 

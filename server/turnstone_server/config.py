@@ -74,6 +74,16 @@ class Config:
         or (Path(__file__).resolve().parents[2] / "record" / "disclaimers-v1.json")
     ))
 
+    #: Ontology terms the interop exporters are allowed to emit.
+    #:
+    #: Configurable for the same reason as the rubric: the repository layout and
+    #: the container layout differ, and a path derived from __file__ silently
+    #: resolves to somewhere that does not exist once installed.
+    vocabulary_path: Path = field(default_factory=lambda: Path(
+        os.environ.get("TURNSTONE_VOCABULARY")
+        or (Path(__file__).resolve().parents[2] / "record" / "vocabulary-v1.json")
+    ))
+
     #: Raw 32-byte Ed25519 seed used to sign bindings.
     #:
     #: Supplied by the operator from whatever already establishes their

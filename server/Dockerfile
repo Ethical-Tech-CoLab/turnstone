@@ -39,12 +39,14 @@ COPY server/turnstone_server /app/turnstone_server
 COPY rubric /app/rubric
 COPY record /app/record
 
-# The rubric and the disclaimers are the single sources of truth for what a
-# quality class means and what a record asserts. Baked into the image rather
-# than mounted so a deployment cannot silently score against a different rubric
-# than it reports, or assert a paraphrased disclaimer.
+# The rubric, the disclaimers and the interop vocabulary are the single sources
+# of truth for what a quality class means, what a record asserts, and which
+# ontology terms may be emitted. Baked into the image rather than mounted so a
+# deployment cannot silently score against a different rubric than it reports,
+# assert a paraphrased disclaimer, or emit an invented class name.
 ENV TURNSTONE_RUBRIC=/app/rubric/heritage-v1.json \
-    TURNSTONE_DISCLAIMERS=/app/record/disclaimers-v1.json
+    TURNSTONE_DISCLAIMERS=/app/record/disclaimers-v1.json \
+    TURNSTONE_VOCABULARY=/app/record/vocabulary-v1.json
 
 RUN useradd --create-home --uid 10001 turnstone \
  && mkdir -p /data/evidence \

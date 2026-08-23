@@ -33,6 +33,7 @@ from fastapi.responses import FileResponse, JSONResponse
 
 from .backends import LicenceRefused, describe_backends
 from .config import config
+from .interop import UnknownTerm, to_crmdig, to_iiif3d
 from .jobs import JobStore, JobState
 from .package import PackageError
 
@@ -47,6 +48,18 @@ if not RUBRIC_PATH.exists():
         f"service should score against. Without it no quality class can be assigned, "
         f"and a reconstruction without a class is not evidence."
     )
+
+for _name, _path in (("disclaimers", config.disclaimers_path),
+                     ("interop vocabulary", config.vocabulary_path)):
+    if not _path.exists():
+        # Same reasoning. A missing vocabulary would first appear as an export
+        # endpoint throwing, long after the service reported itself healthy and
+        # a contributor's capture was accepted.
+        raise RuntimeError(
+            f"{_name} not found at {_path}. Set TURNSTONE_DISCLAIMERS / "
+            f"TURNSTONE_VOCABULARY. Starting without these would mean accepting captures "
+            f"this service cannot finish processing."
+        )
 
 app = FastAPI(
     title="Turnstone reconstruction service",
@@ -229,6 +242,54 @@ def rerun(job_id: str, backend: str = Form(default=""), quality: str = Form(defa
     if created or job.state in {JobState.QUEUED.value, JobState.FAILED.value}:
         _dispatch(job.id)
     return {"job": job.to_dict(), "created": created, "rerunOf": job_id}
+
+
+@app.get("/jobs/{job_id}/export/{fmt}")
+def export_record(job_id: str, fmt: str, base_uri: str = "", model_url: str = ""):
+    """
+    Export the record for a museum system or for delivery.
+
+    `crmdig` is stable and ingestible today. `iiif` follows a DRAFT and the
+    manifest says so in its own summary — a consumer opening the file learns
+    that from the file, not from documentation they may never see.
+    """
+    job = store.find(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail=f"no job {job_id}")
+
+    record_path = store.job_dir(job_id) / "outputs" / "record.json"
+    if not record_path.exists():
+        raise HTTPException(
+            status_code=409,
+            detail=f"job {job_id} is {job.state}; there is no record to export yet",
+        )
+
+    import json as _json
+    record = _json.loads(record_path.read_text(encoding="utf-8"))
+
+    try:
+        if fmt == "crmdig":
+            return JSONResponse(
+                to_crmdig(record, base_uri=base_uri or "urn:turnstone"),
+                media_type="application/ld+json",
+            )
+        if fmt == "iiif":
+            return JSONResponse(
+                to_iiif3d(record,
+                          base_uri=base_uri or "https://example.org/iiif",
+                          model_url=model_url or None),
+                media_type="application/json",
+            )
+    except UnknownTerm as e:
+        # A vocabulary violation is a bug in this service, not bad input — and
+        # emitting an invented term would produce a file that parses and means
+        # nothing to whoever ingests it.
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+    raise HTTPException(
+        status_code=404,
+        detail=f"unknown export format {fmt!r}; this service emits 'crmdig' and 'iiif'",
+    )
 
 
 @app.get("/jobs/{job_id}/outputs/{name}")

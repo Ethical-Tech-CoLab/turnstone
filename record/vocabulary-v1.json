@@ -1,0 +1,71 @@
+{
+  "note": "Every CIDOC-CRM, CRMdig and IIIF term this build is allowed to emit, with the source that defines it. Interop formats fail in a particular way: an invented class name produces a document that parses, validates as JSON, looks entirely plausible, and means nothing to the system it was written for. Nobody notices until an institution tries to ingest it. So the exporters check every term they emit against this list, and a term that is not here cannot be written.",
+
+  "namespaces": {
+    "crm": "http://www.cidoc-crm.org/cidoc-crm/",
+    "crmdig": "http://www.ics.forth.gr/isl/CRMdig/",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#"
+  },
+
+  "sources": {
+    "cidoc-crm": "https://cidoc-crm.org/ CIDOC CRM 7.1.3",
+    "crmdig": "https://cidoc-crm.org/sites/default/files/CRMdig3.2.pdf and CRMdig_V5.0.pdf",
+    "iiif-presentation": "https://iiif.io/api/presentation/3.0/",
+    "iiif-3d": "https://iiif.github.io/3d/temp-draft-4.html — DRAFT, targets Presentation API 4"
+  },
+
+  "crm": {
+    "classes": {
+      "E22_Human-Made_Object": "A physical item created by human activity. The artefact itself.",
+      "E31_Document": "A propositional object making assertions about something. The quality record and the binding.",
+      "E39_Actor": "A person or group. The operator.",
+      "E42_Identifier": "A string used to identify an instance. Hashes and session ids.",
+      "E52_Time-Span": "An abstract temporal extent.",
+      "E55_Type": "A concept used to classify. Quality class, disclosure tier.",
+      "E73_Information_Object": "An identifiable immaterial item.",
+      "E90_Symbolic_Object": "An identifiable symbolic item."
+    },
+    "properties": {
+      "P1_is_identified_by": "E1 -> E41 Appellation. Attaches identifiers rather than inlining bare strings.",
+      "P2_has_type": "E1 -> E55 Type.",
+      "P4_has_time-span": "E2 Temporal Entity -> E52 Time-Span.",
+      "P14_carried_out_by": "E7 Activity -> E39 Actor.",
+      "P70_documents": "E31 Document -> E1 CRM Entity.",
+      "P82a_begin_of_the_begin": "E52 Time-Span -> Literal.",
+      "P82b_end_of_the_end": "E52 Time-Span -> Literal.",
+      "P102_has_title": "E71 Human-Made Thing -> E35 Title.",
+      "P190_has_symbolic_content": "E90 Symbolic Object -> Literal. Carries hash values and disclaimer text."
+    }
+  },
+
+  "crmdig": {
+    "classes": {
+      "D1_Digital_Object": "A digital item. Photographs, the mesh, the ortho views.",
+      "D2_Digitization_Process": "Creating a digital object from a physical one. The capture session.",
+      "D7_Digital_Machine_Event": "A machine-driven event producing or modifying digital objects.",
+      "D8_Digital_Device": "The device an event happened on. The camera.",
+      "D9_Data_Object": "A digital object considered as data.",
+      "D10_Software_Execution": "A run of software. The reconstruction. Subclass of D7.",
+      "D14_Software": "The software used. The reconstruction backend."
+    },
+    "properties": {
+      "L1_digitized": "D2 Digitization Process -> E18 Physical Thing.",
+      "L10_had_input": "D7 Digital Machine Event -> D1 Digital Object.",
+      "L11_had_output": "D7 Digital Machine Event -> D1 Digital Object.",
+      "L12_happened_on_device": "D7 Digital Machine Event -> D8 Digital Device.",
+      "L23_used_software_or_firmware": "D10 Software Execution -> D14 Software.",
+      "L31_has_starting_date-time": "D7 Digital Machine Event -> Literal.",
+      "L32_has_ending_date-time": "D7 Digital Machine Event -> Literal."
+    }
+  },
+
+  "iiif": {
+    "types": [
+      "Manifest", "Scene", "AnnotationPage", "Annotation", "Model",
+      "PerspectiveCamera", "AmbientLight", "SpecificResource", "PointSelector"
+    ],
+    "motivations": ["painting"],
+    "note": "Scene is defined by the IIIF 3D draft, not by Presentation API 3.0. The draft targets Presentation API 4 and its context URI is not yet published, which is why every manifest this build emits says so in its own summary."
+  }
+}

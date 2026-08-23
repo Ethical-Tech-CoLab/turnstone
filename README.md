@@ -57,9 +57,14 @@ is and what it may be relied upon for.
 | ✅ **Phase 5** · perceptual hash | [`lib/phash.js`](lib/phash.js) — dHash over the six ortho views; survives re-export |
 | ✅ **Phase 5** · signing | [`server/turnstone_server/binding.py`](server/turnstone_server/binding.py) — Ed25519, verified from Node in CI |
 | ✅ **Phase 5** · verifier | [`tools/verify-reconstruction.py`](tools/verify-reconstruction.py) — for whoever did *not* produce the reconstruction |
+| ✅ **Phase 6** · museum export | [`server/turnstone_server/interop.py`](server/turnstone_server/interop.py) — CIDOC-CRM / CRMdig, expansion-checked with `pyld` |
+| ✅ **Phase 6** · delivery export | IIIF 3D manifest — every one says in its own summary that it follows a draft |
+| ✅ **Phase 6** · vocabulary guard | [`record/vocabulary-v1.json`](record/vocabulary-v1.json) — an invented term cannot be emitted |
+
+**All 14 conformance tests pass. The specification is fully implemented.**
 
 ```bash
-node --test test/*.test.mjs           # 171 passing
+node --test test/*.test.mjs           # 176 passing
 node tools/validate-rubrics.mjs       # rubric files load and score
 node tools/check-targets.mjs          # printable mats measure what they claim
 node tools/demo-probe.mjs             # drives the demo in headless Chrome
@@ -68,7 +73,7 @@ node tools/check-archive-interop.mjs  # archives open in Python's zipfile
 node tools/verify-package.mjs <zip>   # check a session package is complete
 node tools/analyse-session.mjs <dir> [manifest.json]   # what can be built from a real session
 
-python -m pytest server/tests -q      # 71 passing, no backend required
+python -m pytest server/tests -q      # 91 passing, no backend required
 python tools/server-e2e.py            # end-to-end against a running server
 python tools/check-verifier.py        # damages a real package 8 ways; each must be caught
 python tools/verify-reconstruction.py <outputs-dir> [--key <hex>]

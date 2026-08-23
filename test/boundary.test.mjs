@@ -111,3 +111,37 @@ test('C-7 · the record separates observation from legitimacy in words too', asy
     assert.ok(!pattern.test(flat), `record exposes ${pattern}`);
   }
 });
+
+test('R-10.1 · Turnstone depends on no DPA package', () => {
+  // DPA supplies a rubric file and consumes a record. That is the entire
+  // interface, and it is what lets either project be rebuilt, forked or
+  // abandoned without stranding the other. A build-time dependency would make
+  // Turnstone unusable by anyone who is not running DPA — including the
+  // communities this is meant to serve.
+  const offenders = [];
+  for (const file of sourceFiles(ROOT)) {
+    if (file.endsWith('boundary.test.mjs')) continue;
+    const text = readFileSync(file, 'utf8');
+    // An import of a DPA package, as opposed to prose mentioning the project.
+    for (const pattern of [
+      /from\s+['"]@dpa\//,
+      /require\(\s*['"]@dpa\//,
+      /import\s+['"]@dpa\//,
+      /^\s*(?:from|import)\s+dpa[._\s]/m,
+      /"@dpa\/[^"]+"\s*:/,
+    ]) {
+      if (pattern.test(text)) offenders.push(`${file.slice(ROOT.length)}: ${pattern}`);
+    }
+  }
+  assert.deepEqual(offenders, [], offenders.join('\n'));
+});
+
+test('R-10.2 · the rubric is a file, not a code dependency', () => {
+  // The rubric being data is what lets DPA hand us their thresholds without
+  // either project importing the other.
+  const rubric = JSON.parse(
+    readFileSync(new URL('../rubric/heritage-v1.json', import.meta.url), 'utf8'),
+  );
+  assert.equal(rubric.id, 'heritage-v1');
+  assert.equal(rubric.dimensions.length, 10);
+});

@@ -49,6 +49,8 @@ docker compose -f deploy/docker-compose.yaml up --build
 | `GET` | `/jobs` | Recent jobs |
 | `GET` | `/jobs/{id}` | One job, with its result |
 | `GET` | `/jobs/{id}/quality` | Final assessment, with the capture-time class beside it |
+| `GET` | `/jobs/{id}/export/crmdig` | CIDOC-CRM / CRMdig provenance graph, for a collections system |
+| `GET` | `/jobs/{id}/export/iiif` | IIIF 3D manifest, for delivery (follows a **draft**) |
 | `GET` | `/jobs/{id}/outputs/{name}` | Download an output file |
 | `POST` | `/jobs/{id}/rerun` | Reconstruct the stored photographs again with a different backend or settings |
 
@@ -200,6 +202,51 @@ decision someone must own, and it does not belong somewhere a typo can make it.
 
 ---
 
+## Exporting for museums and for delivery
+
+```bash
+curl localhost:8080/jobs/<id>/export/crmdig        # CIDOC-CRM / CRMdig, JSON-LD
+curl localhost:8080/jobs/<id>/export/iiif          # IIIF 3D manifest
+```
+
+The CRMdig graph follows the real chain of events, because that is what the ontology
+exists to express:
+
+```
+E22 Human-Made Object          the artefact
+  ← L1 digitized —
+D2 Digitization Process        the capture session
+  — L11 had output →           the photographs (D1 Digital Object)
+  — L10 had input →
+D10 Software Execution         the reconstruction
+  — L23 used software →        the backend (D14 Software)
+  — L11 had output →           the mesh (D1 Digital Object)
+```
+
+Quality and the binding attach as `E31 Document` / `P70 documents`. That keeps an assertion
+**about** the mesh distinct from a property **of** it — the quality class is a claim someone
+made, attributable and disputable, not an intrinsic fact about a file.
+
+**Every term is checked against [`record/vocabulary-v1.json`](../record/vocabulary-v1.json)
+at emit time.** Interop fails in a particular way: an invented class name produces a
+document that parses, validates as JSON, looks entirely plausible to its author, and means
+nothing to the system it was written for — discovered only when an institution tries to
+ingest it, usually long after everyone involved has moved on. A term not in the vocabulary
+**cannot be written**. Output is verified by expansion under `pyld`, an independent JSON-LD
+processor; checking it with our own reader would prove only self-consistency.
+
+> **IIIF 3D is a draft.** It defines `Scene` — absent from Presentation API 3.0 — and targets
+> Presentation API 4, whose context URI is not yet published. Every manifest says so **in its
+> own `summary`**, where someone opening the file will read it. Expect to regenerate manifests
+> when the specification settles.
+
+The manifest carries the legitimacy disclaimer as `requiredStatement`, and states an
+incomplete chain of custody and a non-public disclosure tier in its summary. A manifest *is*
+a delivery format, and one built from a record that is not cleared for public delivery must
+not look like a publication.
+
+---
+
 ## Configuration
 
 | Variable | Default | Meaning |
@@ -220,7 +267,7 @@ decision someone must own, and it does not belong somewhere a typo can make it.
 ## Tests
 
 ```bash
-python -m pytest tests -q      # 71 tests, no backend required
+python -m pytest tests -q      # 91 tests, no backend required
 python ../tools/server-e2e.py  # against a running server, re-runnable
 python ../tools/check-verifier.py   # damages a real package 8 ways; each must be caught
 ```
@@ -237,7 +284,8 @@ Cross-implementation checks, because each of these fails silently if it drifts:
   re-associate anything, which is its only job.
 
 The glTF writer is checked with `pygltflib` — an independent parser. Writing a format and
-reading it back with your own reader proves only self-consistency.
+reading it back with your own reader proves only self-consistency. The CRMdig export is
+checked the same way, with `pyld`.
 
 ## Storage layout
 

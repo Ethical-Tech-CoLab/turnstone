@@ -34,6 +34,15 @@ def get(path):
         return r.status, json.loads(r.read())
 
 
+def get_status(path):
+    """Status only, for endpoints expected to fail."""
+    try:
+        with urllib.request.urlopen(BASE + path) as r:
+            return r.status, json.loads(r.read())
+    except urllib.error.HTTPError as e:
+        return e.code, None
+
+
 fails = []
 
 
@@ -172,6 +181,34 @@ print("\n== bad input ==")
 status, br = post_multipart(BASE + "/jobs", {}, {"package": ("junk.zip", b"not a zip at all")})
 check("unreadable archive rejected with 400", status == 400, f"HTTP {status}")
 print("   ", br.get("detail", "")[:120])
+
+print("\n== interop exports (R-10.4) ==")
+_, crmdig = get(f"/jobs/{job_id}/export/crmdig")
+types = {n.get("@type") for n in crmdig.get("@graph", [])}
+print("   CRMdig node types:", ", ".join(sorted(t for t in types if t)))
+check("CRMdig ties the digital chain to a physical object",
+      "crm:E22_Human-Made_Object" in types)
+check("CRMdig records the capture as a digitization process",
+      "crmdig:D2_Digitization_Process" in types)
+check("CRMdig records the reconstruction as a software execution",
+      "crmdig:D10_Software_Execution" in types)
+flat = json.dumps(crmdig, ensure_ascii=False)
+check("the legitimacy disclaimer survives export to CRMdig",
+      "not a right to it" in flat)
+
+_, iiif = get(f"/jobs/{job_id}/export/iiif")
+scene = iiif["items"][0]
+anno = scene["items"][0]["items"][0]
+check("IIIF manifest uses a Scene", scene["type"] == "Scene", scene["type"])
+check("IIIF annotation paints a Model", anno["body"]["type"] == "Model")
+summary = " ".join(iiif["summary"]["en"])
+check("the manifest says it follows a draft", "not a finished specification" in summary)
+check("the manifest states the chain is incomplete", "CHAIN OF CUSTODY INCOMPLETE" in summary)
+check("the disclaimer is a requiredStatement",
+      "not a right to it" in iiif["requiredStatement"]["value"]["en"][0])
+
+status, _ = get_status(f"/jobs/{job_id}/export/nonesuch")
+check("an unknown export format is refused", status == 404, f"HTTP {status}")
 
 print("\n== path traversal on outputs ==")
 try:
